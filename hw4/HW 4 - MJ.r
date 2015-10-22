@@ -24,7 +24,12 @@ labels <- read.table("data/orange_small_train_appetency.labels.txt",
                      sep = "\t", quote = "", comment = "")
 
 
-
+###split
+train.ind <- sample(seq_len(nrow(features)), size = 4*round(nrow(features)/5,0))
+train <- features[train.ind, ]
+test <- features[-train.ind, ]
+					 
+					 
 ###Figure out what needs cleaning
 ###Missing values (total)
 
@@ -34,19 +39,21 @@ prop_na <- function(x){return(sum(is.na(x))/length(x))}
 ##RETURNS PROPORTION OF VECTOR WITH THE MOST COMMON VALUE
 prop_most_common_val <- function(x){return(as.numeric(tail(sort(prop.table(table(x))),1)))}
 
+
+
 ##DROPS COLUMNS
-drops <- c()
-for(i in 2:ncol(features)){
-  if(prop_na(features[[i]]) > .6) {
-    print(paste0("dropping ", names(features)[i], " because 60% of values are NA"))
+drops <- c(1)
+for(i in 2:ncol(train)){
+  if(prop_na(train[[i]]) > .6) {
+    print(paste0("dropping ", names(train)[i], " because 60% of values are NA"))
     drops <- c(drops, i)
     
-  } else if(prop_most_common_val(features[[i]]) > .99) {
-    print(paste0("dropping ", names(features)[i], " because 99% of values are same"))
+  } else if(prop_most_common_val(train[[i]]) > .99) {
+    print(paste0("dropping ", names(train)[i], " because 99% of values are same"))
     drops <- c(drops, i)
   }
 }
-features_sans_na <- features[-drops]
+train_sans_na <- train[-drops]
 
 
 ##replace NA with mean
@@ -59,33 +66,66 @@ replace_na_mean(c(NA, NA, 1, 2, 3))
 
 ###Missing values: numeric
 ###Missing values: categorical
-for(i in 2:ncol(features_sans_na)){
+###Store the values we'll impute on the training data so we can do that on the test data too
+values_to_impute <- data.frame(var = names(train_sans_na),
+                               val = 0)
+
+for(i in 1:ncol(train_sans_na)){
   
-  if(is.numeric(features_sans_na[[i]])) {
-    features_sans_na[[i]] <- replace_na_mean(features_sans_na[[i]])
-    print(paste0("replacing NAs in ", names(features_sans_na)[i], " with mean"))
+  if(is.numeric(train_sans_na[[i]])) {
+    train_sans_na[[i]] <- replace_na_mean(train_sans_na[[i]])
+    print(paste0("replacing NAs in ", names(train_sans_na)[i], " with mean ", mean(train_sans_na[[i]])))
+    values_to_impute[i,2] <- as.character(mean(train_sans_na[[i]]))
+    
   } else {
-    features_sans_na[[i]] = factor(features_sans_na[[i]], levels=c(levels(features_sans_na[[i]]), "UNKNOWN"))
-    features_sans_na[[i]][is.na(features_sans_na[[i]])] = "UNKNOWN"
+    train_sans_na[[i]] = factor(train_sans_na[[i]], levels=c(levels(train_sans_na[[i]]), "UNKNOWN"))
+    train_sans_na[[i]][is.na(train_sans_na[[i]])] = "UNKNOWN"
+    values_to_impute[i,2] <- as.character("UNKNOWN")
+    
   }
 }
 
+###Outliers? Numeric
+###Many values per categorical feature
+df <- train_sans_na
+
+factors <- sapply(df, is.factor)
+df_factor <- df[,factors]
+df_factor_levels <- data.frame(var = names(df_factor),
+                               levels = 0)
+for (i in 1:ncol(df_factor)){
+  df_factor_levels[i,2] <- length(levels(df_factor[,i]))
+}
+
+arrange(df_factor_levels, levels)
+
+
+#####~~~~****TEST DATA PROCESSING BEGIN****~~~~~#####
+replace_na_impute=function(x, val){
+  x[is.na(x)]=val
+  return(x)
+} 
+test_sans_na <- test[-drops]
+for (i in 1:ncol(test_sans_na)) {
+  if (is.numeric(test_sans_na[[i]])) {
+    test_sans_na[[i]] <- replace_na_impute(test_sans_na[[i]],as.numeric(values_to_impute[i,2]))
+    print(paste0("replacing NAs in ", names(test_sans_na)[i], " with ", values_to_impute[i,2]))
+  } else {
+    test_sans_na[[i]] <- replace_na_impute(test_sans_na[[i]],as.factor(values_to_impute[i,2]))
+    print(paste0("replacing NAs in ", names(test_sans_na)[i], " with ", values_to_impute[i,2]))
+  }
+}
+
+
+
 ### add Y
 ### we pick churn
-features_sans_na["churn"] = Y[, "churn"]
-features_sans_na["churn"] = as.factor(features_sans_na[, "churn"]) # make factor
-
-# remove index column
-features_sans_na <- features_sans_na[, -1]
-
-
-n <- nrow(features_sans_na)
-n2 <- floor(n/5)
-n3 <- n-n2
-ii <- sample(1:n,n)
+train_sans_na <- cbind(churn = as.factor(Y[train.ind, "churn"]), train_sans_na)
+test_sans_na <- cbind(churn = as.factor(Y[-train.ind, "churn"]), test_sans_na)
 
 # take a small sample
-orange.tmp <- features_sans_na[ii[1:1000],]
+orange.tmp <- train_sans_na[1:1000,]
+
 
 
 lm.coefs <- c()
@@ -103,34 +143,18 @@ coefs.sig <- lm.coefs < .1
 
 # create test/train data sets containing only the significant columns
 # rearranging so churn (the 'Y') is first
-orange.train <- features_sans_na[ii[1:n3], coefs.sig]
-orange.train <- cbind(churn = features_sans_na[ii[1:n3], "churn"], orange.train)
+orange.train <- train_sans_na[, coefs.sig]
+orange.train <- cbind(churn = train_sans_na[, "churn"], orange.train)
 
-orange.test <- features_sans_na[ii[(n3+1):n], coefs.sig]
-orange.test <- cbind(churn = features_sans_na[ii[(n3+1):n], "churn"], orange.test)
+orange.test <- test_sans_na[, coefs.sig]
+orange.test <- cbind(churn = test_sans_na[, "churn"], orange.test)
 
+# small data for plotting
 orange.plottmp <- orange.train[1:1000,]
 
-par(mfrow=c(3,3))
+par(mfrow=c(4,4))
 for (i in 2:(ncol(orange.plottmp))) {
-  plot(orange.plottmp$churn ~ orange.plottmp[,i], main=names(orange.plottmp)[i], xlab="", ylab="churn")
+  plot(orange.plottmp$churn ~ orange.plottmp[,i], main=names(orange.plottmp)[i], xlab="", ylab="churn", col=c("gray", "red"))
 }
-
-
-
-
-# control <- trainControl(method="repeatedcv", number=10, repeats=0)
-# # train the model
-# model <- train(churn~., data=orange.plot, method="lvq", preProcess="scale", trControl=control)
-# # estimate variable importance
-# importance <- varImp(model, scale=FALSE)
-# # summarize importance
-# print(importance)
-# # plot importance
-# plot(importance)
-
-
-#http://www.statmethods.net/graphs/scatterplot.html
-
 
 
