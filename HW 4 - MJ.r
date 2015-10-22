@@ -1,5 +1,3 @@
-### LABELS ARE ACTUALLY IN THE FEATURES DATASET ALREADY...THEY SHOULD BE DROPPED BUT I HAVEN'T DONE IT YET
-
 ###Setup
 set.seed(69)
 library(dplyr)
@@ -60,3 +58,14 @@ for(i in 2:ncol(features_sans_na)){
 
 ###Outliers? Numeric
 ###Many values per categorical feature
+df <- features_sans_na
+
+factors <- sapply(df, is.factor)
+df_factor <- df[,factors]
+df_factor_levels <- data.frame(var = names(df_factor),
+                               levels = 0)
+for (i in 1:ncol(df_factor)){
+  df_factor_levels[i,2] <- length(levels(df_factor[,i]))
+}
+
+arrange(df_factor_levels, levels)
