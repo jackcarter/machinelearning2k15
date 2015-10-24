@@ -1,7 +1,7 @@
-### LABELS ARE ACTUALLY IN THE FEATURES DATASET ALREADY...THEY SHOULD BE DROPPED BUT I HAVEN'T DONE IT YET
-
+##Clear everything
 rm(list=ls(all=TRUE))
 
+##Don't use scientific notation
 options(scipen=5)
 
 ###Setup
@@ -15,8 +15,9 @@ library(mlbench)
 library(caret)
 library(gbm)
 
+setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw4/")
 #setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4")
-setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/hw4")
+#setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/hw4")
 
 
 #### utility functions
@@ -37,15 +38,10 @@ scf <- function(x) {
 }
 
 
-
-###Read in data - drop the labels
-features <- read.csv("data/orange_small_train.data.x_and_y.csv") %>%
-  select(-(churn:upselling))
-
-
-
-Y <- read.csv("data/orange_small_train.data.x_and_y.csv") %>%
-  select((churn:upselling))
+###Read in data
+raw <- read.csv("data/orange_small_train.data.x_and_y.csv")
+features <- select(raw, -(churn:upselling))
+Y <- select(raw, (churn:upselling))
 
 labels <- read.table("data/orange_small_train_appetency.labels.txt",
                      sep = "\t", quote = "", comment = "")
