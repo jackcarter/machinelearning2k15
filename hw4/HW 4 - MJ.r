@@ -15,9 +15,9 @@ library(mlbench)
 library(caret)
 library(gbm)
 
-setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw4/")
-#setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4")
-#setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/hw4")
+setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw4/") #Mike
+#setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4") #Jack
+#setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/hw4") #Tom
 
 
 ####################################
@@ -58,8 +58,9 @@ train.ind <- sample(seq_len(nrow(features)), size = 4*round(nrow(features)/5,0))
 train <- features[train.ind, ]
 test <- features[-train.ind, ]
 
-### CLEANUP
-##DROPS COLUMNS
+####################################
+## CLEANUP: FIND LOW-VARIANCE and HIGH-NA COLUMNS
+####################################
 drops <- c(1)
 for(i in 2:ncol(train)){
   if(prop_na(train[[i]]) > .6) {
@@ -73,14 +74,14 @@ for(i in 2:ncol(train)){
 }
 
 ####################################
-## DROP THE COLUMNS WE WANT TO DROP
+## CLEANUP: DROPPING NA/LV COLS
 ####################################
 train_sans_na <- train[, -drops]
 
 
 
 ####################################
-## IMPUTATION: DECIDING ON VALUES
+## CLEANUP: FIND VALUES TO IMPUTE
 ####################################
 ###Store the values we'll impute on the training data so we can do that on the test data too
 values_to_impute <- data.frame(var = names(train_sans_na),
@@ -101,23 +102,8 @@ for(i in 1:ncol(train_sans_na)){
   }
 }
 
-
-
-df <- train_sans_na
-
-factors <- sapply(df, is.factor)
-df_factor <- df[,factors]
-df_factor_levels <- data.frame(var = names(df_factor),
-                               levels = 0)
-for (i in 1:ncol(df_factor)){
-  df_factor_levels[i,2] <- length(levels(df_factor[,i]))
-}
-
-arrange(df_factor_levels, levels)
-
-
 ####################################
-## IMPUTATION: USING THE VALUES
+## CLEANUP: USING IMPUTED VALUES
 ####################################
 replace_na_impute=function(x, val){
   x[is.na(x)]=val
@@ -134,10 +120,8 @@ for (i in 1:ncol(test_sans_na)) {
   }
 }
 
-
-
 ####################################
-## MORE CLEANUP: DROP FACTORS COLS
+## CLEANUP: DROP ALL CATEGORICAL VARIABLES
 ####################################
 ## Vinh says to drop them.
 train_sans_na <- train_sans_na[, sapply(train_sans_na, class) != "factor"]
@@ -145,7 +129,7 @@ test_sans_na <- train_sans_na[, sapply(test_sans_na, class) != "factor"]
 
 
 ####################################
-## ORGANIZE DATA AGAIN?
+## CLEANUP: ADDING BACK Y
 ####################################
 ### add Y
 ### we pick churn
@@ -154,7 +138,7 @@ test_sans_na <- cbind(churn = factor(Y[-train.ind, "churn"], levels=c(-1, 1), la
 
 
 ####################################
-## FIND MORE COLUMNS TO DROP
+## CLEANUP: FIND LINEARLY-PREDICTIVE VARIABLES
 ####################################
 ### with categorical variables dropped,
 ### linear regression is fast on the entire training set of 40,000
@@ -188,7 +172,7 @@ coefs.sig[1] = TRUE
 
 
 ####################################
-## DROP NON-SIGNIFICANT LINEAR PREDICTORS
+## CLEANUP: DROP NON-SIGNIFICANT LINEAR PREDICTORS
 ####################################
 # create test/train data sets containing only the significant columns
 # rearranging so churn (the 'Y') is first
