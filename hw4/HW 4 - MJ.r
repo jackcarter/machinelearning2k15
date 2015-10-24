@@ -46,6 +46,21 @@ replace_na_mean=function(x){
   return(x)
 }
 
+#deviance loss function
+lossf = function(y,phat,wht=0.0000001) {
+  #y should be 0/1
+  #wht shrinks probs in phat towards .5, don't log 0!
+  if(is.factor(y)) y = as.numeric(y)-1
+  phat = (1-wht)*phat + wht*.5
+  py = ifelse(y==1,phat,1-phat)
+  return(-2*sum(log(py)))
+}             
+
+replace_na_impute=function(x, val){
+  x[is.na(x)]=val
+  return(x)
+} 
+
 ####################################
 ## DATA
 ####################################
@@ -105,10 +120,7 @@ for(i in 1:ncol(train_sans_na)){
 ####################################
 ## CLEANUP: USING IMPUTED VALUES
 ####################################
-replace_na_impute=function(x, val){
-  x[is.na(x)]=val
-  return(x)
-} 
+
 
 for (i in 1:ncol(test_sans_na)) {
   if (is.numeric(test_sans_na[[i]])) {
@@ -219,16 +231,6 @@ for (ntrees in seq(10, MAX_TREES, by=by.step)) {
   yhat=predict(boost.fit, n.trees=ntrees)
   
   yhatsc=scf(yhat)
-  #deviance loss function
-  lossf = function(y,phat,wht=0.0000001) {
-    #y should be 0/1
-    #wht shrinks probs in phat towards .5, don't log 0!
-    if(is.factor(y)) y = as.numeric(y)-1
-    phat = (1-wht)*phat + wht*.5
-    py = ifelse(y==1,phat,1-phat)
-    return(-2*sum(log(py)))
-  }             
-  
   #calculate the total loss of this fit. save off the best loss
   lvec = rep(0,length(yhat))
   for(ii in 1:length(yhat)) lvec[ii] = lossf(orange.train$churn[ii],yhatsc[ii])  
