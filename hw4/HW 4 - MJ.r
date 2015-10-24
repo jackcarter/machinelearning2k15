@@ -15,8 +15,8 @@ library(mlbench)
 library(caret)
 library(gbm)
 
-setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw4/") #Mike
-#setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4") #Jack
+#setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw4/") #Mike
+setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4") #Jack
 #setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/hw4") #Tom
 
 
@@ -137,7 +137,7 @@ for (i in 1:ncol(test_sans_na)) {
 ## Vinh says to drop them.
 ## We should be down to 40 variables now
 train_sans_na <- train_sans_na[, sapply(train_sans_na, class) != "factor"]
-test_sans_na <- train_sans_na[, sapply(test_sans_na, class) != "factor"]
+test_sans_na <- test_sans_na[, sapply(test_sans_na, class) != "factor"]
 
 
 ####################################
