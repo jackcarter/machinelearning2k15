@@ -121,8 +121,8 @@ for (i in 1:ncol(test_sans_na)) {
 
 ### add Y
 ### we pick churn
-train_sans_na <- cbind(churn = as.factor(Y[train.ind, "churn"]), train_sans_na)
-test_sans_na <- cbind(churn = as.factor(Y[-train.ind, "churn"]), test_sans_na)
+train_sans_na <- cbind(churn = factor(Y[train.ind, "churn"], levels=c(-1, 1), labels=c('no', 'yes')), train_sans_na)
+test_sans_na <- cbind(churn = factor(Y[-train.ind, "churn"], levels=c(-1, 1), labels=c('no', 'yes')), test_sans_na)
 
 # take a small sample
 orange.tmp <- train_sans_na[1:1000,]
@@ -149,14 +149,26 @@ orange.train <- cbind(churn = train_sans_na[, "churn"], orange.train)
 # gbm requires Y to be {0,1}
 orange.train$churn = convertFactor(orange.train$churn)
 
+# for rf - no factor conversion
+# HACK - remove categorical variables because it can't handle more than 53
+orange.train.rf <- train_sans_na[, coefs.sig]
+orange.train.rf <- orange.train.rf[, 1:(ncol(orange.train.rf)-2)] # remove last 2 columns
+orange.train.rf <- cbind(churn = train_sans_na[, "churn"], orange.train.rf)
+
 orange.test <- test_sans_na[, coefs.sig]
 orange.test <- cbind(churn = test_sans_na[, "churn"], orange.test)
 # gbm requires Y to be {0,1}
 orange.test$churn = convertFactor(orange.test$churn)
 
+# for rf - no factor conversion
+# HACK - remove categorical variables because it can't handle more than 53
+orange.test.rf <- test_sans_na[, coefs.sig]
+orange.test.rf <- orange.test.rf[, 1:(ncol(orange.test.rf)-2)] # remove last 2 columns
+orange.test.rf <- cbind(churn = test_sans_na[, "churn"], orange.test.rf)
+
 # small data for plotting
 orange.plottmp <- orange.train[1:10000,]
-
+orange.plottmp.rf <- orange.train.rf[1:10000,]
 
 par(mfrow=c(4,4))
 for (i in 2:(ncol(orange.plottmp))) {
@@ -242,12 +254,12 @@ yhat.best.boost.fit <- predict(best.boost.fit, n.trees=bestntrees, newdata=orang
 
 ############# random forest
 
-m <- floor(sqrt(ncol(orange.train)))
+m <- floor(sqrt(ncol(orange.train.rf)))
 
 # NOTE: this takes a LONG time
-fit.rf <- randomForest(churn ~ ., data=orange.train, mtry=m, ntree=500)
+fit.rf <- randomForest(churn ~ ., data=orange.plottmp.rf, mtry=m, ntree=500)
 pred.oob.rf <- predict(fit.rf) # with newdata unspecified, uses oob
 
 # this doesn't work, not sure why
 # error: Type of predictors in new data do not match that of the training data.
-#pred.test.rf <- predict(fit.rf, newdata=orange.test[,-1])
+pred.test.rf <- predict(fit.rf, newdata=orange.test)
