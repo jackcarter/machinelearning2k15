@@ -138,13 +138,13 @@ for (i in 1:ncol(test_sans_na)) {
 ## Vinh says to drop them.
 ## We should be down to 40 variables now
 train_sans_na <- train_sans_na[, sapply(train_sans_na, class) != "factor"]
-test_sans_na <- train_sans_na[, sapply(test_sans_na, class) != "factor"]
+test_sans_na <- test_sans_na[, sapply(test_sans_na, class) != "factor"]
 
 
 ####################################
 ## CLEANUP: ADDING BACK Y
 ####################################
-### add Y
+### add Y and get back to 41 variables
 ### we pick churn
 train_sans_na <- cbind(churn = factor(Y[train.ind, "churn"], levels=c(-1, 1), labels=c('no', 'yes')), train_sans_na)
 test_sans_na <- cbind(churn = factor(Y[-train.ind, "churn"], levels=c(-1, 1), labels=c('no', 'yes')), test_sans_na)
@@ -157,7 +157,7 @@ test_sans_na <- cbind(churn = factor(Y[-train.ind, "churn"], levels=c(-1, 1), la
 ### linear regression is fast on the entire training set of 40,000
 lm.coefs <- c()
 nbr_features <- ncol(train_sans_na)
-for (i in 2:(nbr_features-1)) { # note: 'churn' column is first
+for (i in 2:(nbr_features)) { # note: 'churn' column is first
   
   n <- 1
   lm.coefs.tmp <- c()
@@ -175,7 +175,7 @@ for (i in 2:(nbr_features-1)) { # note: 'churn' column is first
   
   # add median 
   lm.coefs[i] = median(lm.coefs.tmp)
-  cat("median for run ", i, " is ", lm.coefs[i], "\n")
+  cat("median for column ", i, " is ", lm.coefs[i], "\n")
   
 }
 
