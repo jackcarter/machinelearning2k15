@@ -54,7 +54,7 @@ for(i in 2:ncol(train)){
     drops <- c(drops, i)
   }
 }
-train_sans_na <- train[-drops]
+train_sans_na <- train[, -drops]
 
 
 ##replace NA with mean
