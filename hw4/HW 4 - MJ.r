@@ -160,8 +160,7 @@ for (i in 2:(ncol(orange.plottmp))) {
 
 # create boosting fit
 
-MAX_TREES = 5000
-GRID_SIZE = 20
+
 
 # convert a factor to {0,1}
 convertFactor <- function(x){
@@ -176,22 +175,62 @@ convertFactor <- function(x){
 # gbm requires Y to be {0,1}
 orange.plottmp$churn = convertFactor(orange.plottmp$churn)
 
-boost.fit = gbm(churn~., 
-                distribution = "adaboost", 
-                data=orange.plottmp, 
-                n.trees=MAX_TREES, 
-                interaction.depth = 1,
-                shrinkage = 0.01) #haha
-
-right = 0
-wrong = 0
-for (i in 1:(length(orange.plottmp$churn))) {
-  if ((orange.plottmp$churn[i]==1) == (predict(boost.fit, n.trees=5000)[i]>.5)) {
-    right = right + 1
-  } else {
-    wrong = wrong + 1
-  }
+#scales to 0:1
+scf <- function(x) {
+  return((x-min(x))/(max(x)-min(x)))
 }
+
+totallvec=rep(0,500)
+losstotal=9999999
+bestntrees=0
+MAX_TREES = 5000
+#let's figure out the optimal number of trees to boost with
+for (ntrees in seq(10, MAX_TREES,by=10)) {
+  print(ntrees)
+  if (ntrees %% 100 == 0) print(paste("Iteration ==>", ntrees))
+  boost.fit = gbm(churn~., 
+                  distribution = "adaboost", 
+                  data=orange.plottmp, 
+                  n.trees=ntrees, 
+                  interaction.depth = 1,
+                  shrinkage = 0.01) #haha
+  
+  yhat=predict(boost.fit, n.trees=ntrees)
+
+  yhatsc=scf(yhat)
+  #deviance loss function
+  lossf = function(y,phat,wht=0.0000001) {
+    #y should be 0/1
+    #wht shrinks probs in phat towards .5, don't log 0!
+    if(is.factor(y)) y = as.numeric(y)-1
+    phat = (1-wht)*phat + wht*.5
+    py = ifelse(y==1,phat,1-phat)
+    return(-2*sum(log(py)))
+  }             
+  
+  #calculate the total loss of this fit. save off the best loss
+  lvec = rep(0,length(yhat))
+  for(ii in 1:length(yhat)) lvec[ii] = lossf(orange.plottmp$churn[ii],yhatsc[ii])  
+  if (sum(lvec)<losstotal) {
+    losstotal=sum(lvec)
+    bestntrees=ntrees
+    print(paste("bestntrees==>",bestntrees))
+  }
+  
+  #save off the loss for each fit so we can plot it
+  totallvec[ntrees/10]=sum(lvec)
+}
+
+plot(totallvec)
+
+lossL[[i]]=lvec; names(lossL)[i] = names(phatL)[i]
+for (ii in 1:length(yhat)) {
+  
+  lossf(orange.plottmp$churn[1],yhat[1])  
+}
+
+yhat
+
 par(mfrow=c(1,2))
 plot(orange.plottmp$churn)
 plot((predict(boost.fit, n.trees=5000)>-.5))
