@@ -151,7 +151,7 @@ orange.test <- test_sans_na[, coefs.sig]
 orange.test <- cbind(churn = test_sans_na[, "churn"], orange.test)
 
 # small data for plotting
-orange.plottmp <- orange.train[1:1000,]
+orange.plottmp <- orange.train[1:10000,]
 
 par(mfrow=c(4,4))
 for (i in 2:(ncol(orange.plottmp))) {
@@ -183,18 +183,16 @@ scf <- function(x) {
 totallvec=rep(0,500)
 losstotal=9999999
 bestntrees=0
-MAX_TREES = 5000
+MAX_TREES = 2000
+boost.fit = gbm(churn~., 
+                distribution = "adaboost", 
+                data=orange.plottmp, 
+                n.trees=MAX_TREES, 
+                interaction.depth = 1,
+                shrinkage = 0.01) #haha
 #let's figure out the optimal number of trees to boost with
 for (ntrees in seq(10, MAX_TREES,by=10)) {
-  print(ntrees)
-  if (ntrees %% 100 == 0) print(paste("Iteration ==>", ntrees))
-  boost.fit = gbm(churn~., 
-                  distribution = "adaboost", 
-                  data=orange.plottmp, 
-                  n.trees=ntrees, 
-                  interaction.depth = 1,
-                  shrinkage = 0.01) #haha
-  
+  if (ntrees %% 100 == 0) print(paste("Iteration ==>", ntrees))  
   yhat=predict(boost.fit, n.trees=ntrees)
 
   yhatsc=scf(yhat)
@@ -222,15 +220,3 @@ for (ntrees in seq(10, MAX_TREES,by=10)) {
 }
 
 plot(totallvec)
-
-lossL[[i]]=lvec; names(lossL)[i] = names(phatL)[i]
-for (ii in 1:length(yhat)) {
-  
-  lossf(orange.plottmp$churn[1],yhat[1])  
-}
-
-yhat
-
-par(mfrow=c(1,2))
-plot(orange.plottmp$churn)
-plot((predict(boost.fit, n.trees=5000)>-.5))
