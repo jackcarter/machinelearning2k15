@@ -20,50 +20,45 @@ setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw4/")
 #setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/hw4")
 
 
-#### utility functions
+####################################
+## Utility functions
+####################################
+##returns proportion of vector that is na
+prop_na <- function(x){return(sum(is.na(x))/length(x))}
 
-# convert a factor to {0,1}
+##returns proportion of vector with the most common value
+prop_most_common_val <- function(x){return(as.numeric(tail(sort(prop.table(table(x))),1)))}
+
+##convert factors with 2 levels to {0,1}
 convertFactor <- function(x){
   if(is.factor(x) & nlevels(x) == 2){
     returnVal <- as.numeric(x == levels(x)[2])
   }
-  
   return(returnVal)
-  
 }
 
-#scales to 0:1
-scf <- function(x) {
-  return((x-min(x))/(max(x)-min(x)))
+##scales to 0:1
+scf <- function(x) {return((x-min(x))/(max(x)-min(x)))}
+
+##replace NA with mean
+replace_na_mean=function(x){
+  x[is.na(x)]=mean(x,na.rm=TRUE)
+  return(x)
 }
 
-
-###Read in data
+####################################
+## DATA
+####################################
 raw <- read.csv("data/orange_small_train.data.x_and_y.csv")
 features <- select(raw, -(churn:upselling))
 Y <- select(raw, (churn:upselling))
-
-labels <- read.table("data/orange_small_train_appetency.labels.txt",
-                     sep = "\t", quote = "", comment = "")
-
 
 ###split
 train.ind <- sample(seq_len(nrow(features)), size = 4*round(nrow(features)/5,0))
 train <- features[train.ind, ]
 test <- features[-train.ind, ]
 
-
-###Figure out what needs cleaning
-###Missing values (total)
-
-##RETURNS PROPORTION OF VECTOR THAT IS NA
-prop_na <- function(x){return(sum(is.na(x))/length(x))}
-
-##RETURNS PROPORTION OF VECTOR WITH THE MOST COMMON VALUE
-prop_most_common_val <- function(x){return(as.numeric(tail(sort(prop.table(table(x))),1)))}
-
-
-
+### CLEANUP
 ##DROPS COLUMNS
 drops <- c(1)
 for(i in 2:ncol(train)){
@@ -76,19 +71,17 @@ for(i in 2:ncol(train)){
     drops <- c(drops, i)
   }
 }
+
+####################################
+## DROP THE COLUMNS WE WANT TO DROP
+####################################
 train_sans_na <- train[, -drops]
 
 
-##replace NA with mean
-replace_na_mean=function(x){
-  x[is.na(x)]=mean(x,na.rm=TRUE)
-  return(x)
-}
 
-replace_na_mean(c(NA, NA, 1, 2, 3))
-
-###Missing values: numeric
-###Missing values: categorical
+####################################
+## IMPUTATION: DECIDING ON VALUES
+####################################
 ###Store the values we'll impute on the training data so we can do that on the test data too
 values_to_impute <- data.frame(var = names(train_sans_na),
                                val = 0)
@@ -108,8 +101,8 @@ for(i in 1:ncol(train_sans_na)){
   }
 }
 
-###Outliers? Numeric
-###Many values per categorical feature
+
+
 df <- train_sans_na
 
 factors <- sapply(df, is.factor)
@@ -123,7 +116,9 @@ for (i in 1:ncol(df_factor)){
 arrange(df_factor_levels, levels)
 
 
-#####~~~~****TEST DATA PROCESSING BEGIN****~~~~~#####
+####################################
+## IMPUTATION: USING THE VALUES
+####################################
 replace_na_impute=function(x, val){
   x[is.na(x)]=val
   return(x)
@@ -141,20 +136,26 @@ for (i in 1:ncol(test_sans_na)) {
 
 
 
-### remove categorical variables
-### why? because Vinh said so
+####################################
+## MORE CLEANUP: DROP FACTORS COLS
+####################################
+## Vinh says to drop them.
 train_sans_na <- train_sans_na[, sapply(train_sans_na, class) != "factor"]
 test_sans_na <- train_sans_na[, sapply(test_sans_na, class) != "factor"]
 
+
+####################################
+## ORGANIZE DATA AGAIN?
+####################################
 ### add Y
 ### we pick churn
 train_sans_na <- cbind(churn = factor(Y[train.ind, "churn"], levels=c(-1, 1), labels=c('no', 'yes')), train_sans_na)
 test_sans_na <- cbind(churn = factor(Y[-train.ind, "churn"], levels=c(-1, 1), labels=c('no', 'yes')), test_sans_na)
 
-# smaller sample
-#n_train <- 5000
-#train_tmp <- train_sans_na[1:n_train,]
 
+####################################
+## FIND MORE COLUMNS TO DROP
+####################################
 ### with categorical variables dropped,
 ### linear regression is fast on the entire training set of 40,000
 lm.coefs <- c()
@@ -185,6 +186,10 @@ for (i in 2:(nbr_features-1)) { # note: 'churn' column is first
 coefs.sig <- lm.coefs < .01
 coefs.sig[1] = TRUE
 
+
+####################################
+## DROP NON-SIGNIFICANT LINEAR PREDICTORS
+####################################
 # create test/train data sets containing only the significant columns
 # rearranging so churn (the 'Y') is first
 orange.train <- train_sans_na[, coefs.sig]
@@ -210,8 +215,11 @@ orange.test.rf <- test_sans_na[, coefs.sig]
 #  plot(orange.train$churn ~ orange.train[,i], main=names(orange.train)[i], xlab="", ylab="churn", col=c("gray", "red"))
 #}
 
-# create boosting fit
 
+####################################
+## MODELING: BOOSTING
+####################################
+# create boosting fit
 
 losstotal=9999999
 bestntrees=0
@@ -271,8 +279,9 @@ best.boost.fit <- gbm(churn~.,
 yhat.best.boost.fit <- predict(best.boost.fit, n.trees=bestntrees, newdata=orange.test)
 
 
-############# random forest
-
+####################################
+## MODELING: RANDOM FOREST
+####################################
 m <- floor(sqrt(ncol(orange.train.rf)))
 fit.rf <- randomForest(churn ~ ., data=orange.train.rf, mtry=m, ntree=500)
 pred.oob.rf <- predict(fit.rf) # with newdata unspecified, uses oob
