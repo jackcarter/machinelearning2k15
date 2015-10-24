@@ -201,7 +201,7 @@ MAX_TREES = 2000
 by.step <- 10
 totallvec=rep(0,MAX_TREES/by.step)
 
-
+orange.plottmp$churn=convertFactor(orange.plottmp$churn)
 boost.fit = gbm(churn~., 
                 distribution = "adaboost", 
                 data=orange.plottmp, 
@@ -241,6 +241,7 @@ for (ntrees in seq(10, MAX_TREES, by=by.step)) {
 par(mfrow=c(1,1))
 plot(totallvec)
 
+orange.train$churn=convertFactor(orange.train$churn)
 # I don't understand the yhat values below... [tom]
 best.boost.fit <- gbm(churn~., 
                         distribution = "adaboost", 
