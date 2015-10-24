@@ -157,8 +157,6 @@ test_sans_na <- cbind(churn = factor(Y[-train.ind, "churn"], levels=c(-1, 1), la
 lm.coefs <- c()
 nbr_features <- ncol(train_sans_na)
 for (i in 2:(nbr_features-1)) { # note: 'churn' column is first
-  
-  n <- 1
   lm.coefs.tmp <- c()
   
   for (j in (i+1):nbr_features) {
@@ -166,7 +164,7 @@ for (i in 2:(nbr_features-1)) { # note: 'churn' column is first
     mod.lm <- glm(train_sans_na$churn ~ train_sans_na[,i] + train_sans_na[,j], family="binomial")
     
     # save off the p-value
-    lm.coefs.tmp[n] = coef(summary(mod.lm))[,4][2]
+    lm.coefs.tmp[j] = coef(summary(mod.lm))[,4][2]
     
     #cat("trained linear model for column ", i,", observing coef of ", lm.coefs.tmp[n], "\n")
     
