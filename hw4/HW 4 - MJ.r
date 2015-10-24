@@ -146,12 +146,17 @@ coefs.sig <- lm.coefs < .1
 # rearranging so churn (the 'Y') is first
 orange.train <- train_sans_na[, coefs.sig]
 orange.train <- cbind(churn = train_sans_na[, "churn"], orange.train)
+# gbm requires Y to be {0,1}
+orange.train$churn = convertFactor(orange.train$churn)
 
 orange.test <- test_sans_na[, coefs.sig]
 orange.test <- cbind(churn = test_sans_na[, "churn"], orange.test)
+# gbm requires Y to be {0,1}
+orange.test$churn = convertFactor(orange.test$churn)
 
 # small data for plotting
 orange.plottmp <- orange.train[1:10000,]
+
 
 par(mfrow=c(4,4))
 for (i in 2:(ncol(orange.plottmp))) {
@@ -171,9 +176,6 @@ convertFactor <- function(x){
   return(returnVal)
   
 }
-
-# gbm requires Y to be {0,1}
-orange.plottmp$churn = convertFactor(orange.plottmp$churn)
 
 #scales to 0:1
 scf <- function(x) {
@@ -230,7 +232,7 @@ plot(totallvec)
 # I don't understand the yhat values below... [tom]
 best.boost.fit <- gbm(churn~., 
                         distribution = "adaboost", 
-                        data=orange.plottmp, 
+                        data=orange.train, 
                         n.trees=bestntrees, 
                         interaction.depth = 1,
                         shrinkage = 0.01) #haha
@@ -238,4 +240,14 @@ best.boost.fit <- gbm(churn~.,
 yhat.best.boost.fit <- predict(best.boost.fit, n.trees=bestntrees, newdata=orange.test)
 
 
+############# random forest
 
+m <- floor(sqrt(ncol(orange.train)))
+
+# NOTE: this takes a LONG time
+fit.rf <- randomForest(churn ~ ., data=orange.train, mtry=m, ntree=500)
+pred.oob.rf <- predict(fit.rf) # with newdata unspecified, uses oob
+
+# this doesn't work, not sure why
+# error: Type of predictors in new data do not match that of the training data.
+#pred.test.rf <- predict(fit.rf, newdata=orange.test[,-1])
