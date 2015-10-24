@@ -23,6 +23,17 @@ setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw4/") #Mike
 ####################################
 ## Utility functions
 ####################################
+
+#deviance loss function
+lossf = function(y,phat,wht=0.0000001) {
+  #y should be 0/1
+  #wht shrinks probs in phat towards .5, don't log 0!
+  if(is.factor(y)) y = as.numeric(y)-1
+  phat = (1-wht)*phat + wht*.5
+  py = ifelse(y==1,phat,1-phat)
+  return(-2*sum(log(py)))
+}       
+
 ##returns proportion of vector that is na
 prop_na <- function(x){return(sum(is.na(x))/length(x))}
 
@@ -213,21 +224,13 @@ boost.fit = gbm(churn~.,
                 n.trees=MAX_TREES, 
                 interaction.depth = 1,
                 shrinkage = 0.01) #haha
+
 #let's figure out the optimal number of trees to boost with
 for (ntrees in seq(10, MAX_TREES, by=by.step)) {
   if (ntrees %% 100 == 0) print(paste("Iteration ==>", ntrees))  
   yhat=predict(boost.fit, n.trees=ntrees)
   
-  yhatsc=scf(yhat)
-  #deviance loss function
-  lossf = function(y,phat,wht=0.0000001) {
-    #y should be 0/1
-    #wht shrinks probs in phat towards .5, don't log 0!
-    if(is.factor(y)) y = as.numeric(y)-1
-    phat = (1-wht)*phat + wht*.5
-    py = ifelse(y==1,phat,1-phat)
-    return(-2*sum(log(py)))
-  }             
+  yhatsc=scf(yhat)      
   
   #calculate the total loss of this fit. save off the best loss
   lvec = rep(0,length(yhat))
