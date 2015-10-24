@@ -9,8 +9,9 @@ library(reshape2)
 library(gclus)
 library(mlbench)
 library(caret)
+library(gbm)
 
-setwd("c:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/hw4")
+setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4")
 
 
 ###Read in data - drop the labels
@@ -157,4 +158,40 @@ for (i in 2:(ncol(orange.plottmp))) {
   plot(orange.plottmp$churn ~ orange.plottmp[,i], main=names(orange.plottmp)[i], xlab="", ylab="churn", col=c("gray", "red"))
 }
 
+# create boosting fit
 
+MAX_TREES = 5000
+GRID_SIZE = 20
+
+# convert a factor to {0,1}
+convertFactor <- function(x){
+  if(is.factor(x) & nlevels(x) == 2){
+    returnVal <- as.numeric(x == levels(x)[2])
+  }
+  
+  return(returnVal)
+  
+}
+
+# gbm requires Y to be {0,1}
+orange.plottmp$churn = convertFactor(orange.plottmp$churn)
+
+boost.fit = gbm(churn~., 
+                distribution = "adaboost", 
+                data=orange.plottmp, 
+                n.trees=MAX_TREES, 
+                interaction.depth = 1,
+                shrinkage = 0.01) #haha
+
+right = 0
+wrong = 0
+for (i in 1:(length(orange.plottmp$churn))) {
+  if ((orange.plottmp$churn[i]==1) == (predict(boost.fit, n.trees=5000)[i]>.5)) {
+    right = right + 1
+  } else {
+    wrong = wrong + 1
+  }
+}
+par(mfrow=c(1,2))
+plot(orange.plottmp$churn)
+plot((predict(boost.fit, n.trees=5000)>-.5))
