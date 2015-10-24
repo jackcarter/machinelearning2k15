@@ -180,10 +180,14 @@ scf <- function(x) {
   return((x-min(x))/(max(x)-min(x)))
 }
 
-totallvec=rep(0,500)
+
 losstotal=9999999
 bestntrees=0
 MAX_TREES = 2000
+by.step <- 10
+totallvec=rep(0,MAX_TREES/by.step)
+
+
 boost.fit = gbm(churn~., 
                 distribution = "adaboost", 
                 data=orange.plottmp, 
@@ -191,7 +195,7 @@ boost.fit = gbm(churn~.,
                 interaction.depth = 1,
                 shrinkage = 0.01) #haha
 #let's figure out the optimal number of trees to boost with
-for (ntrees in seq(10, MAX_TREES,by=10)) {
+for (ntrees in seq(10, MAX_TREES, by=by.step)) {
   if (ntrees %% 100 == 0) print(paste("Iteration ==>", ntrees))  
   yhat=predict(boost.fit, n.trees=ntrees)
 
@@ -219,4 +223,19 @@ for (ntrees in seq(10, MAX_TREES,by=10)) {
   totallvec[ntrees/10]=sum(lvec)
 }
 
+
+par(mfrow=c(1,1))
 plot(totallvec)
+
+# I don't understand the yhat values below... [tom]
+best.boost.fit <- gbm(churn~., 
+                        distribution = "adaboost", 
+                        data=orange.plottmp, 
+                        n.trees=bestntrees, 
+                        interaction.depth = 1,
+                        shrinkage = 0.01) #haha
+
+yhat.best.boost.fit <- predict(best.boost.fit, n.trees=bestntrees, newdata=orange.test)
+
+
+
