@@ -1,5 +1,9 @@
 ### LABELS ARE ACTUALLY IN THE FEATURES DATASET ALREADY...THEY SHOULD BE DROPPED BUT I HAVEN'T DONE IT YET
 
+rm(list=ls(all=TRUE))
+
+options(scipen=5)
+
 ###Setup
 set.seed(69)
 library(dplyr)
@@ -11,15 +15,37 @@ library(mlbench)
 library(caret)
 library(gbm)
 
-setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4")
+#setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4")
+setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/hw4")
+
+
+#### utility functions
+
+# convert a factor to {0,1}
+convertFactor <- function(x){
+  if(is.factor(x) & nlevels(x) == 2){
+    returnVal <- as.numeric(x == levels(x)[2])
+  }
+  
+  return(returnVal)
+  
+}
+
+#scales to 0:1
+scf <- function(x) {
+  return((x-min(x))/(max(x)-min(x)))
+}
+
 
 
 ###Read in data - drop the labels
 features <- read.csv("data/orange_small_train.data.x_and_y.csv") %>%
   select(-(churn:upselling))
 
+
+
 Y <- read.csv("data/orange_small_train.data.x_and_y.csv") %>%
-       select((churn:upselling))
+  select((churn:upselling))
 
 labels <- read.table("data/orange_small_train_appetency.labels.txt",
                      sep = "\t", quote = "", comment = "")
@@ -29,8 +55,8 @@ labels <- read.table("data/orange_small_train_appetency.labels.txt",
 train.ind <- sample(seq_len(nrow(features)), size = 4*round(nrow(features)/5,0))
 train <- features[train.ind, ]
 test <- features[-train.ind, ]
-					 
-					 
+
+
 ###Figure out what needs cleaning
 ###Missing values (total)
 
@@ -119,80 +145,76 @@ for (i in 1:ncol(test_sans_na)) {
 
 
 
+### remove categorical variables
+### why? because Vinh said so
+train_sans_na <- train_sans_na[, sapply(train_sans_na, class) != "factor"]
+test_sans_na <- train_sans_na[, sapply(test_sans_na, class) != "factor"]
+
 ### add Y
 ### we pick churn
 train_sans_na <- cbind(churn = factor(Y[train.ind, "churn"], levels=c(-1, 1), labels=c('no', 'yes')), train_sans_na)
 test_sans_na <- cbind(churn = factor(Y[-train.ind, "churn"], levels=c(-1, 1), labels=c('no', 'yes')), test_sans_na)
 
-# take a small sample
-orange.tmp <- train_sans_na[1:1000,]
+# smaller sample
+#n_train <- 5000
+#train_tmp <- train_sans_na[1:n_train,]
 
-
-
+### with categorical variables dropped,
+### linear regression is fast on the entire training set of 40,000
 lm.coefs <- c()
-for (i in 1:(ncol(orange.tmp)-1)) { # note: 'churn' column is last
-  mod.lm <- glm(orange.tmp$churn ~ orange.tmp[,i], family="binomial")
-
-  # save off the p-value
-  lm.coefs[i] = coef(summary(mod.lm))[,4][2]
+nbr_features <- ncol(train_sans_na)
+for (i in 2:(nbr_features-1)) { # note: 'churn' column is first
   
-  cat("trained linear model for column ", i,"\n")
+  n <- 1
+  lm.coefs.tmp <- c()
+  
+  for (j in (i+1):nbr_features) {
+    
+    mod.lm <- glm(train_sans_na$churn ~ train_sans_na[,i] + train_sans_na[,j], family="binomial")
+    
+    # save off the p-value
+    lm.coefs.tmp[n] = coef(summary(mod.lm))[,4][2]
+    
+    #cat("trained linear model for column ", i,", observing coef of ", lm.coefs.tmp[n], "\n")
+    
+  }
+  
+  # add median 
+  lm.coefs[i] = median(lm.coefs.tmp)
+  cat("median for run ", i, " is ", lm.coefs[i], "\n")
+  
 }
 
-# these are the variables with a p value of 0.1 or greater
-coefs.sig <- lm.coefs < .1
+# these are the variables with minimum p value across runs
+coefs.sig <- lm.coefs < .01
+coefs.sig[1] = TRUE
 
 # create test/train data sets containing only the significant columns
 # rearranging so churn (the 'Y') is first
 orange.train <- train_sans_na[, coefs.sig]
-orange.train <- cbind(churn = train_sans_na[, "churn"], orange.train)
+#orange.train <- cbind(churn = train_sans_na[, "churn"], orange.train)
 # gbm requires Y to be {0,1}
 orange.train$churn = convertFactor(orange.train$churn)
 
 # for rf - no factor conversion
-# HACK - remove categorical variables because it can't handle more than 53
 orange.train.rf <- train_sans_na[, coefs.sig]
-orange.train.rf <- orange.train.rf[, 1:(ncol(orange.train.rf)-2)] # remove last 2 columns
-orange.train.rf <- cbind(churn = train_sans_na[, "churn"], orange.train.rf)
+#orange.train.rf <- cbind(churn = train_sans_na[, "churn"], orange.train.rf)
 
 orange.test <- test_sans_na[, coefs.sig]
-orange.test <- cbind(churn = test_sans_na[, "churn"], orange.test)
+#orange.test <- cbind(churn = test_sans_na[, "churn"], orange.test)
 # gbm requires Y to be {0,1}
 orange.test$churn = convertFactor(orange.test$churn)
 
 # for rf - no factor conversion
-# HACK - remove categorical variables because it can't handle more than 53
 orange.test.rf <- test_sans_na[, coefs.sig]
-orange.test.rf <- orange.test.rf[, 1:(ncol(orange.test.rf)-2)] # remove last 2 columns
-orange.test.rf <- cbind(churn = test_sans_na[, "churn"], orange.test.rf)
+#orange.test.rf <- cbind(churn = test_sans_na[, "churn"], orange.test.rf)
 
-# small data for plotting
-orange.plottmp <- orange.train[1:10000,]
-orange.plottmp.rf <- orange.train.rf[1:10000,]
-
-par(mfrow=c(4,4))
-for (i in 2:(ncol(orange.plottmp))) {
-  plot(orange.plottmp$churn ~ orange.plottmp[,i], main=names(orange.plottmp)[i], xlab="", ylab="churn", col=c("gray", "red"))
-}
+#par(mfrow=c(4,4))
+#for (i in 2:(ncol(orange.train))) {
+#  plot(orange.train$churn ~ orange.train[,i], main=names(orange.train)[i], xlab="", ylab="churn", col=c("gray", "red"))
+#}
 
 # create boosting fit
-
-
-
-# convert a factor to {0,1}
-convertFactor <- function(x){
-  if(is.factor(x) & nlevels(x) == 2){
-    returnVal <- as.numeric(x == levels(x)[2])
-  }
-  
-  return(returnVal)
-  
-}
-
-#scales to 0:1
-scf <- function(x) {
-  return((x-min(x))/(max(x)-min(x)))
-}
 
 
 losstotal=9999999
@@ -201,10 +223,10 @@ MAX_TREES = 2000
 by.step <- 10
 totallvec=rep(0,MAX_TREES/by.step)
 
-orange.plottmp$churn=convertFactor(orange.plottmp$churn)
+orange.train$churn=convertFactor(orange.train$churn)
 boost.fit = gbm(churn~., 
                 distribution = "adaboost", 
-                data=orange.plottmp, 
+                data=orange.train, 
                 n.trees=MAX_TREES, 
                 interaction.depth = 1,
                 shrinkage = 0.01) #haha
@@ -212,7 +234,7 @@ boost.fit = gbm(churn~.,
 for (ntrees in seq(10, MAX_TREES, by=by.step)) {
   if (ntrees %% 100 == 0) print(paste("Iteration ==>", ntrees))  
   yhat=predict(boost.fit, n.trees=ntrees)
-
+  
   yhatsc=scf(yhat)
   #deviance loss function
   lossf = function(y,phat,wht=0.0000001) {
@@ -226,7 +248,7 @@ for (ntrees in seq(10, MAX_TREES, by=by.step)) {
   
   #calculate the total loss of this fit. save off the best loss
   lvec = rep(0,length(yhat))
-  for(ii in 1:length(yhat)) lvec[ii] = lossf(orange.plottmp$churn[ii],yhatsc[ii])  
+  for(ii in 1:length(yhat)) lvec[ii] = lossf(orange.train$churn[ii],yhatsc[ii])  
   if (sum(lvec)<losstotal) {
     losstotal=sum(lvec)
     bestntrees=ntrees
@@ -244,11 +266,11 @@ plot(totallvec)
 orange.train$churn=convertFactor(orange.train$churn)
 # I don't understand the yhat values below... [tom]
 best.boost.fit <- gbm(churn~., 
-                        distribution = "adaboost", 
-                        data=orange.train, 
-                        n.trees=bestntrees, 
-                        interaction.depth = 1,
-                        shrinkage = 0.01) #haha
+                      distribution = "adaboost", 
+                      data=orange.train, 
+                      n.trees=bestntrees, 
+                      interaction.depth = 1,
+                      shrinkage = 0.01) #haha
 
 yhat.best.boost.fit <- predict(best.boost.fit, n.trees=bestntrees, newdata=orange.test)
 
@@ -256,11 +278,11 @@ yhat.best.boost.fit <- predict(best.boost.fit, n.trees=bestntrees, newdata=orang
 ############# random forest
 
 m <- floor(sqrt(ncol(orange.train.rf)))
-
-# NOTE: this takes a LONG time
-fit.rf <- randomForest(churn ~ ., data=orange.plottmp.rf, mtry=m, ntree=500)
+fit.rf <- randomForest(churn ~ ., data=orange.train.rf, mtry=m, ntree=500)
 pred.oob.rf <- predict(fit.rf) # with newdata unspecified, uses oob
 
-# this doesn't work, not sure why
-# error: Type of predictors in new data do not match that of the training data.
-pred.test.rf <- predict(fit.rf, newdata=orange.test)
+pred.test.rf <- predict(fit.rf, newdata=orange.test.rf)
+
+rf.positive_pred <- pred.test.rf == "yes"
+cat("positive predictions: ", sum(rf.positive_pred), "of ", length(pred.test.rf))
+pred.test.rf.false_positive <- orange.test.rf[rf.positive_pred, "churn"] == "no"
