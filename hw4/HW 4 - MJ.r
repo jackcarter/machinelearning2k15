@@ -77,7 +77,7 @@ for(i in 2:ncol(train)){
 ## CLEANUP: DROPPING NA/LV COLS
 ####################################
 train_sans_na <- train[, -drops]
-
+test_sans_na <- test[,-drops]
 
 
 ####################################
@@ -109,7 +109,7 @@ replace_na_impute=function(x, val){
   x[is.na(x)]=val
   return(x)
 } 
-test_sans_na <- test[-drops]
+
 for (i in 1:ncol(test_sans_na)) {
   if (is.numeric(test_sans_na[[i]])) {
     test_sans_na[[i]] <- replace_na_impute(test_sans_na[[i]],as.numeric(values_to_impute[i,2]))
@@ -124,6 +124,7 @@ for (i in 1:ncol(test_sans_na)) {
 ## CLEANUP: DROP ALL CATEGORICAL VARIABLES
 ####################################
 ## Vinh says to drop them.
+## We should be down to 40 variables now
 train_sans_na <- train_sans_na[, sapply(train_sans_na, class) != "factor"]
 test_sans_na <- train_sans_na[, sapply(test_sans_na, class) != "factor"]
 
@@ -177,27 +178,21 @@ coefs.sig[1] = TRUE
 # create test/train data sets containing only the significant columns
 # rearranging so churn (the 'Y') is first
 orange.train <- train_sans_na[, coefs.sig]
-#orange.train <- cbind(churn = train_sans_na[, "churn"], orange.train)
+
+
 # gbm requires Y to be {0,1}
 orange.train$churn = convertFactor(orange.train$churn)
 
 # for rf - no factor conversion
 orange.train.rf <- train_sans_na[, coefs.sig]
-#orange.train.rf <- cbind(churn = train_sans_na[, "churn"], orange.train.rf)
 
 orange.test <- test_sans_na[, coefs.sig]
-#orange.test <- cbind(churn = test_sans_na[, "churn"], orange.test)
 # gbm requires Y to be {0,1}
 orange.test$churn = convertFactor(orange.test$churn)
 
 # for rf - no factor conversion
 orange.test.rf <- test_sans_na[, coefs.sig]
-#orange.test.rf <- cbind(churn = test_sans_na[, "churn"], orange.test.rf)
 
-#par(mfrow=c(4,4))
-#for (i in 2:(ncol(orange.train))) {
-#  plot(orange.train$churn ~ orange.train[,i], main=names(orange.train)[i], xlab="", ylab="churn", col=c("gray", "red"))
-#}
 
 
 ####################################
