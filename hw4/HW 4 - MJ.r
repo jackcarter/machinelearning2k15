@@ -15,14 +15,25 @@ library(mlbench)
 library(caret)
 library(gbm)
 
-setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw4/") #Mike
-#setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4") #Jack
+#setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw4/") #Mike
+setwd("~/Documents/R/machinelearning/machinelearning2k15/hw4") #Jack
 #setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/hw4") #Tom
 
 
 ####################################
 ## Utility functions
 ####################################
+
+#deviance loss function
+lossf = function(y,phat,wht=0.0000001) {
+  #y should be 0/1
+  #wht shrinks probs in phat towards .5, don't log 0!
+  if(is.factor(y)) y = as.numeric(y)-1
+  phat = (1-wht)*phat + wht*.5
+  py = ifelse(y==1,phat,1-phat)
+  return(-2*sum(log(py)))
+}       
+
 ##returns proportion of vector that is na
 prop_na <- function(x){return(sum(is.na(x))/length(x))}
 
@@ -168,6 +179,7 @@ for (i in 2:(nbr_features-1)) { # note: 'churn' column is first
     # save off the p-value of j 
     lm.coefs.tmp[i-1,j-1] = coef(summary(mod.lm))[,4][3]
     
+    
     #cat("trained linear model for column ", i,", observing coef of ", lm.coefs.tmp[n], "\n")
     
   }
@@ -179,7 +191,7 @@ for (i in 1:(ncol(lm.coefs.tmp)-1)) {
   cat("median for column ", i, " is ", lm.coefs[i], "\n")
 }
 
-  
+
 
 # these are the variables with minimum p value across runs
 coefs.sig <- lm.coefs < .01
@@ -226,12 +238,14 @@ boost.fit = gbm(churn~.,
                 n.trees=MAX_TREES, 
                 interaction.depth = 1,
                 shrinkage = 0.01) #haha
+
 #let's figure out the optimal number of trees to boost with
 for (ntrees in seq(10, MAX_TREES, by=by.step)) {
   if (ntrees %% 100 == 0) print(paste("Iteration ==>", ntrees))  
   yhat=predict(boost.fit, n.trees=ntrees)
   
   yhatsc=scf(yhat)
+  
   #calculate the total loss of this fit. save off the best loss
   lvec = rep(0,length(yhat))
   for(ii in 1:length(yhat)) lvec[ii] = lossf(orange.train$churn[ii],yhatsc[ii])  
@@ -273,3 +287,4 @@ rf.positive_pred <- pred.test.rf == "yes"
 cat("positive predictions: ", sum(rf.positive_pred), "of ", length(pred.test.rf))
 pred.test.rf.false_positive <- orange.test.rf[rf.positive_pred, "churn"] == "no"
 cat("false positive predictions: ", sum(pred.test.rf.false_positive), "of ", length(pred.test.rf))
+
