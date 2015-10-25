@@ -157,27 +157,29 @@ test_sans_na <- cbind(churn = factor(Y[-train.ind, "churn"], levels=c(-1, 1), la
 ### linear regression is fast on the entire training set of 40,000
 lm.coefs <- c()
 nbr_features <- ncol(train_sans_na)
-for (i in 2:(nbr_features)) { # note: 'churn' column is first
-  
-  n <- 1
-  lm.coefs.tmp <- c()
-  
+lm.coefs.tmp <- matrix(data=NA,nrow=nbr_features-1,ncol=nbr_features-1)
+for (i in 2:(nbr_features-1)) { # note: 'churn' column is first
+  print(paste("Calculating p-values for column", i))
   for (j in (i+1):nbr_features) {
     
     mod.lm <- glm(train_sans_na$churn ~ train_sans_na[,i] + train_sans_na[,j], family="binomial")
-    
-    # save off the p-value
-    lm.coefs.tmp[n] = coef(summary(mod.lm))[,4][2]
+    # save off the p-value of i 
+    lm.coefs.tmp[j-1,i-1] = coef(summary(mod.lm))[,4][2]
+    # save off the p-value of j 
+    lm.coefs.tmp[i-1,j-1] = coef(summary(mod.lm))[,4][3]
     
     #cat("trained linear model for column ", i,", observing coef of ", lm.coefs.tmp[n], "\n")
     
   }
   
-  # add median 
-  lm.coefs[i] = median(lm.coefs.tmp)
-  cat("median for column ", i, " is ", lm.coefs[i], "\n")
-  
 }
+for (i in 1:(ncol(lm.coefs.tmp)-1)) {
+  # add median 
+  lm.coefs[i] = median(lm.coefs.tmp[,i], na.rm=T)
+  cat("median for column ", i, " is ", lm.coefs[i], "\n")
+}
+
+  
 
 # these are the variables with minimum p value across runs
 coefs.sig <- lm.coefs < .01
@@ -218,7 +220,6 @@ MAX_TREES = 2000
 by.step <- 10
 totallvec=rep(0,MAX_TREES/by.step)
 
-orange.train$churn=convertFactor(orange.train$churn)
 boost.fit = gbm(churn~., 
                 distribution = "adaboost", 
                 data=orange.train, 
@@ -248,7 +249,6 @@ for (ntrees in seq(10, MAX_TREES, by=by.step)) {
 par(mfrow=c(1,1))
 plot(totallvec)
 
-orange.train$churn=convertFactor(orange.train$churn)
 # I don't understand the yhat values below... [tom]
 best.boost.fit <- gbm(churn~., 
                       distribution = "adaboost", 
@@ -272,3 +272,4 @@ pred.test.rf <- predict(fit.rf, newdata=orange.test.rf)
 rf.positive_pred <- pred.test.rf == "yes"
 cat("positive predictions: ", sum(rf.positive_pred), "of ", length(pred.test.rf))
 pred.test.rf.false_positive <- orange.test.rf[rf.positive_pred, "churn"] == "no"
+cat("false positive predictions: ", sum(pred.test.rf.false_positive), "of ", length(pred.test.rf))
