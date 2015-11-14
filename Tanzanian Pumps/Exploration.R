@@ -47,11 +47,33 @@ g + geom_point(data = df, aes(x = longitude, y = latitude, color = construction_
 g + geom_point(data = df, aes(x = longitude, y = latitude, color = status_group), size = 1)
 ggsave("Well Status by Location.png", width = 10, height = 10)
 
+g + geom_point(data = df, aes(x = longitude, y = latitude, color = basin), size = 1)
+ggsave("Well Status by Basin", width = 10, height = 10)
 
 
-
-summary(df$construction_year)
-ggplot(melt(item_pos), aes(value)) + 
-  geom_histogram(color = "black", fill = "white") + facet_wrap(~variable, scales = "free") + 
-  labs(title = "Distribution of variables")
-
+i = 12
+for (i in 3:6) {
+  
+  x = df[[i]]
+  xname = names(df)[i]
+  title = paste0("Well Status by ", xname)
+  filename = paste0(title, ".png")
+  
+  if(class(df[[i]]) == "factor"){
+    print(paste(i, "factor"))
+    
+    fh = get_factor_histogram(x,
+                             xname,
+                             df$status_group,
+                             "Well Status",
+                             title)
+    
+  
+    fh  
+    
+    ggsave(filename, plot = fh,
+           width = 10, height = 10)
+  }
+  
+  
+}

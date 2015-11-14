@@ -14,3 +14,23 @@ convertFactor <- function(x){
 
 ##scales to 0:1
 scf <- function(x) {return((x-min(x))/(max(x)-min(x)))}
+
+##returns a histogram of factor levels vs outcomes
+get_factor_histogram <- function(x, xname, y, yname, title){
+  
+  print(paste('plotting',title))
+  
+  ##Reorder the factor levels of x by decreasing frequency
+  xt = table(x)
+  x <- factor(x, levels = names(xt[order(xt, decreasing = TRUE)]))
+  
+  t = table(x, y) %>% as.data.frame()
+  histo = ggplot(data = t, aes(x = x, y = Freq)) + 
+    geom_bar(stat = "identity") + 
+    facet_wrap(~y) +
+    coord_flip() + 
+    ggtitle(title) +
+    theme_bw()
+  
+  return(histo)
+}
