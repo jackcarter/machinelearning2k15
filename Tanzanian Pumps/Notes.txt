@@ -1,0 +1,21 @@
+Exploratory questions to answer...
+
+
+How much data is there?
+training set: 5900 rows, 40 columns
+
+
+What kinds of data are there?
+30 factors
+7 integers
+3 numeric
+
+What kinds of data are missing?
+Seemingly nothing.
+
+How much variation is there?
+
+What (visually) has a strong relationship with pump status?
+Are some pumps overrepresented
+What time period is the data from?
+Are the failure clustered geographically?
