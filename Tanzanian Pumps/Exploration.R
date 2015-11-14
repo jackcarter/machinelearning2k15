@@ -9,20 +9,49 @@ setwd("/Users/michaeljoyce/hw-machinelearning2k15/Tanzanian Pumps/") #Mike
 library(dplyr)
 library(ggplot2)
 library(scales)
+library(ggmap)
+library(reshape2)
 source("Pump Util.R")
-df <- read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Training_set_values.csv")
+
+
+features <- read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Training_set_values.csv")
+labels <- read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Training_set_labels.csv")
+df <- merge(labels, features, by = "id")
 
 ##How much data do we have here?
 dim(df)
 
+#How many examples do we have of each category?
+qplot(df$status_group)
+
 ##30 factor columns, 10 numeric columns
-sapply(df, class) %>% as.data.frame() %>% table()
+sapply(features, class) %>% as.data.frame() %>% table()
 
 ##None of the data is missing!
 sapply(df, prop_na) %>% as.data.frame() %>% table()
 
 ##What fraction of each column has the column's most common value?
 cc <- sapply(df, prop_most_common_val) %>% round(digits = 2) %>% as.data.frame() %>% add_rownames()
-qplot(cc$., binwidth = .05)
+cc <- select(cc, rowName = rowname, propMostCommon = .) %>% arrange(-propMostCommon)
+qplot(cc$propMostCommon, binwidth = .05)
 
+#recorded_by is clearly useless?
+summary(df$recorded_by)
+
+##map fun
+map <- get_map("Tanzania", zoom = 6)
+g <- ggmap(map)
+
+summary(geo)
+g + geom_point(data = df, aes(x = longitude, y = latitude, color = construction_year), size = 0.5)
+g + geom_point(data = df, aes(x = longitude, y = latitude, color = status_group), size = 1)
+ggsave("Well Status by Location.png", width = 10, height = 10)
+
+
+
+
+summary(df$construction_year)
+ggplot(melt(item_pos), aes(value)) + 
+  geom_histogram(color = "black", fill = "white") + facet_wrap(~variable, scales = "free") + 
+  labs(title = "Distribution of variables")
 
