@@ -1,22 +1,12 @@
-rm(list = ls())
-options(scipen=5)
-set.seed(2015)
+### exploratory data analysis
 
-setwd("/Users/michaeljoyce/hw-machinelearning2k15/Tanzanian Pumps/") #Mike
-#setwd("~/Documents/R/machinelearning/machinelearning2k15/Tanzanian Pumps/") #Jack
-#setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/Tanzanian Pumps/") #Tom
+source("GetData.R")
 
-library(dplyr)
 library(ggplot2)
 library(scales)
 library(ggmap)
 library(reshape2)
-source("Pump Util.R")
 
-
-features <- read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Training_set_values.csv")
-labels <- read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Training_set_labels.csv")
-df <- merge(labels, features, by = "id")
 
 ##How much data do we have here?
 dim(df)
@@ -34,9 +24,6 @@ sapply(df, prop_na) %>% as.data.frame() %>% table()
 cc <- sapply(df, prop_most_common_val) %>% round(digits = 2) %>% as.data.frame() %>% add_rownames()
 cc <- select(cc, rowName = rowname, propMostCommon = .) %>% arrange(-propMostCommon)
 qplot(cc$propMostCommon, binwidth = .05)
-
-#recorded_by is clearly useless?
-summary(df$recorded_by)
 
 ##map fun
 map <- get_map("Tanzania", zoom = 6)
