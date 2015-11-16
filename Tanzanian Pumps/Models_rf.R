@@ -2,7 +2,7 @@
 #setwd("~/Documents/R/machinelearning/machinelearning2k15/Tanzanian Pumps/") #Jack
 setwd("C:/Users/Tom/Dropbox/Booth/Machine Learning/machinelearning2k15/Tanzanian Pumps/") #Tom
 
-#### predictive modeling
+#### Random Forests
 
 source("GetData.R")
 
