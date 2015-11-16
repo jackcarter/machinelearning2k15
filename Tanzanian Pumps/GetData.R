@@ -12,17 +12,17 @@ features <- read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Training_set_valu
 labels <- read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Training_set_labels.csv")
 df <- merge(labels, features, by = "id")
 
-# uncomment to examine column properties
-for (i in 2:ncol(df)) { # skip first row (dependent)
-  col_class <- class(df[,i])
-  if (col_class == "factor") {
-    unique_vals <- length(unique(df[,i]))
-    cat(colnames(df)[i], " is factor with ", unique_vals, " unique values\n")
-    
-  } else{
-    cat(colnames(df)[i], " is ", col_class, "\n")
-  }
-}
+# # uncomment to examine column properties
+# for (i in 2:ncol(df)) { # skip first row (dependent)
+#   col_class <- class(df[,i])
+#   if (col_class == "factor") {
+#     unique_vals <- length(unique(df[,i]))
+#     cat(colnames(df)[i], " is factor with ", unique_vals, " unique values\n")
+#     
+#   } else{
+#     cat(colnames(df)[i], " is ", col_class, "\n")
+#   }
+# }
 
 # date - transform record date to the number
 # of days since the latest record in the data set
@@ -31,19 +31,32 @@ df[,"date_recorded"] <- as.Date(df[,"date_recorded"])
 latest_date <- df[which.max(df[,"date_recorded"]), "date_recorded"]
 # days old
 df$record_age <- as.numeric(latest_date - df$date_recorded)
-# remove
-df <- df[, colnames(df) != "date_recorded"]
+
+# days between construction and recording
+# for missing data, leave at 0
+known_construction_year <- df[,"construction_year"] != 0
+unknown_construction_year <- df[,"construction_year"] == 0
+
+df[known_construction_year, "construction_date"] <- as.Date(paste0(floor(df[known_construction_year, "construction_year"]),"-12-31")) # last day of year
+
+df[known_construction_year, "days_elapsed"] <- as.numeric(df[known_construction_year, "date_recorded"] - df[known_construction_year, "construction_date"])
+df[unknown_construction_year, "days_elapsed"] <- mean(df[known_construction_year, "days_elapsed"]) #impute
 
 # impute means for construction year
 avg_year <- mean(df$construction_year[df$construction_year!=0])
-df$construction_year[df$construction_year==0] = avg_year
+df$construction_year[df$construction_year==0] <- avg_year
 
 latest_construction_year <- df[which.max(df$construction_year), "construction_year"]
 
 # days since construction
 df$construction_age <- latest_construction_year - df$construction_year
+
 # remove
+df <- df[, colnames(df) != "construction_date"]
+
+# remove string dates
 df <- df[, colnames(df) != "construction_year"]
+df <- df[, colnames(df) != "date_recorded"]
 
 #recorded_by is clearly useless - remove it
 df <- df[, colnames(df) != "recorded_by"]
