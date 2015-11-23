@@ -8,8 +8,39 @@ setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw8/") #Mike
 library(igraph)
 
 
-g <- graph.famous("Zachary")
-plot(g)
+data(karate, package = "igraphdata")
+
+# nodes in faction 1 will be rectangles
+# nodes in faction 2 will be circles
+shapes = c('rectangle', 'circle')
+faction_vertex_shape = get.vertex.attribute(karate, "Faction")
+faction_vertex_shape[faction_vertex_shape == 1] = shapes[1]
+faction_vertex_shape[faction_vertex_shape == 2] = shapes[2]
+karate_layout = layout.davidson.harel(karate)
+
+
+
+visualize_karate_communities <- function(communities){
+  communities_name = deparse(substitute(communities))
+  png(paste0(communities_name,".png"))
+  par(pin = c(6,6))
+  plot(communities, karate, 
+       layout=karate_layout, 
+       vertex.shape=faction_vertex_shape)
+  title(communities_name)
+  dev.off()
+}
+
+
+## we need to apply all the clustering methods
+## we need to visualize the outputs
+visualize_karate_communities(cl)
+methods <- c("x","y")
+for(method in methods){
+  cl = 
+  visualize_karate_communities(cl)
+}
+
 
 ## Run these [community detetction] algorithms on Zachary’s karate club data 
 ## where we know the ground truth and investigate what communities you get out. 
@@ -34,3 +65,5 @@ communities(imc)
 ## Note that some algorithms work only on undirected graphs. 
 ## Also note that some algorithms are too slow to be run on big networks. 
 ## Check the manual to see if you can run the community detection algorithm on the wikipedia graph.
+
+w <- read.graph("wikipedia.gml", format="gml")
