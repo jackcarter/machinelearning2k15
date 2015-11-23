@@ -1,4 +1,5 @@
 rm(list = ls())
+set.seed(69)
 
 setwd("/Users/michaeljoyce/hw-machinelearning2k15/hw8/") #Mike
 #setwd("~/Documents/R/machinelearning/machinelearning2k15/hw8/") #Jack
@@ -88,22 +89,43 @@ communities(imc)
 
 w <- read.graph("wikipedia.gml", format="gml")
 
+cl <- cluster_walktrap(w)
+
+cl_cluster_walktrap <- cluster_walktrap(w)
+cl_infomap <- cluster_infomap(w)
+
+cldf <- data.frame(label = get.vertex.attribute(w, "label"),
+                   community = cl_cluster_walktrap$membership)
 
 
-for(function_name in functions){
-  print(function_name)
+library(dplyr)
+library(ggplot2)
+cldf <- cldf %>% arrange(community)
+counts <- cldf %>% group_by(community) %>% summarise(count = n()) %>% arrange(desc(count))
+head(counts)
+
+
+cldf %>% filter(community == 19) %>% head(n = 100)
+
+sample_community_ids <- cldf$community %>% unique %>% sample(size = 5)
+
+for(id in sample_community_ids){
+  this_community <- cldf %>% filter(community == id)
+  print(paste0("community ",id,":"))
   
-  cl_method = match.fun(function_name)
-  cl = cl_method(karate)
-  
-  #print(paste(length(unique(cl$membership)), "communities detected"))
-  
-  # if(is.hierarchical(cl)){
-  #   print("trying to cut")
-  #   cut_cl = cutat(cl, no = 2)
-  #}
-  
-  #print(paste(length(unique(cl$membership)), "communities now used"))
-  
-  visualize_karate_communities(cl, function_name)
+  if(nrow(this_community) > 5){
+    this_community
+    
+    
+  } else {
+    print(as.character(this_community$label))
+  }
 }
+
+
+print(paste(length(unique(cl$membership)), "communities now used"))
+
+
+
+
+head(V(w))
