@@ -20,8 +20,7 @@ karate_layout = layout.davidson.harel(karate)
 
 
 
-visualize_karate_communities <- function(communities){
-  communities_name = deparse(substitute(communities))
+visualize_karate_communities <- function(communities, communities_name){
   png(paste0(communities_name,".png"))
   par(pin = c(6,6))
   plot(communities, karate, 
@@ -34,13 +33,34 @@ visualize_karate_communities <- function(communities){
 
 ## we need to apply all the clustering methods
 ## we need to visualize the outputs
-visualize_karate_communities(cl)
-methods <- c("x","y")
-for(method in methods){
-  cl = 
-  visualize_karate_communities(cl)
+functions <- c('cluster_fast_greedy'
+               ,'cluster_infomap'
+               ,'cluster_label_prop'
+               ,'cluster_leading_eigen'
+               ,'cluster_louvain'
+               ,'cluster_optimal'
+               ,'cluster_spinglass'
+               ,'cluster_walktrap')
+
+for(function_name in functions){
+  print(function_name)
+  
+  cl_method = match.fun(function_name)
+  cl = cl_method(karate)
+  
+  #print(paste(length(unique(cl$membership)), "communities detected"))
+  
+  # if(is.hierarchical(cl)){
+  #   print("trying to cut")
+  #   cut_cl = cutat(cl, no = 2)
+   #}
+
+  #print(paste(length(unique(cl$membership)), "communities now used"))
+  
+  visualize_karate_communities(cl, function_name)
 }
 
+?cluster_louvain
 
 ## Run these [community detetction] algorithms on Zachary’s karate club data 
 ## where we know the ground truth and investigate what communities you get out. 
@@ -67,3 +87,23 @@ communities(imc)
 ## Check the manual to see if you can run the community detection algorithm on the wikipedia graph.
 
 w <- read.graph("wikipedia.gml", format="gml")
+
+
+
+for(function_name in functions){
+  print(function_name)
+  
+  cl_method = match.fun(function_name)
+  cl = cl_method(karate)
+  
+  #print(paste(length(unique(cl$membership)), "communities detected"))
+  
+  # if(is.hierarchical(cl)){
+  #   print("trying to cut")
+  #   cut_cl = cutat(cl, no = 2)
+  #}
+  
+  #print(paste(length(unique(cl$membership)), "communities now used"))
+  
+  visualize_karate_communities(cl, function_name)
+}
