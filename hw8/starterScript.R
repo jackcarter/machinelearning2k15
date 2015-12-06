@@ -1,3 +1,4 @@
+rm(list = ls())
 #### part 1
 
 library(igraph)
@@ -5,6 +6,7 @@ library(igraph)
 # install.packages("igraphdata")
 library(igraphdata)
 data(karate, package = "igraphdata")
+
 
 # nodes in faction 1 will be rectangles
 # nodes in faction 2 will be circles
@@ -57,6 +59,11 @@ modularity(karate, cl2)
 
 cl = cluster_fast_greedy(karate)
 is.hierarchical(cl)
+plot(cl, karate, 
+     layout=karate_layout, 
+     vertex.shape=faction_vertex_shape)
+
+
 
 cl = cluster_infomap(karate)
 is.hierarchical(cl)
@@ -85,8 +92,8 @@ is.hierarchical(cl)
 wg = read.graph("wikipedia.gml", "gml")
 summary(wg)
 
-list.vertex.attributes(wg)
-get.vertex.attribute(wg, "label")[1:5]
+list.vertex.attributes(w)
+get.vertex.attribute(w, "label")[1:5]
 
 # some algorithms work on undirected graphs only
 wgu = as.undirected(wg)

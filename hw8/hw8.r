@@ -49,14 +49,15 @@ for(function_name in functions){
   cl_method = match.fun(function_name)
   cl = cl_method(karate)
   
-  #print(paste(length(unique(cl$membership)), "communities detected"))
+  print(paste(length(unique(cl$membership)), "communities detected"))
   
-  # if(is.hierarchical(cl)){
-  #   print("trying to cut")
-  #   cut_cl = cutat(cl, no = 2)
-   #}
+  if(is.hierarchical(cl)){
+     print("trying to cut")
+     cut_cl = cutat(cl, no=2)
+     cl$membership=cut_cl
+  }
 
-  #print(paste(length(unique(cl$membership)), "communities now used"))
+  print(paste(length(unique(cl$membership)), "communities now used"))
   
   visualize_karate_communities(cl, function_name)
 }
@@ -86,26 +87,31 @@ communities(imc)
 ## Note that some algorithms work only on undirected graphs. 
 ## Also note that some algorithms are too slow to be run on big networks. 
 ## Check the manual to see if you can run the community detection algorithm on the wikipedia graph.
-
-w <- read.graph("wikipedia.gml", format="gml")
-
-cl <- cluster_walktrap(w)
-
-cl_cluster_walktrap <- cluster_walktrap(w)
-cl_infomap <- cluster_infomap(w)
-
-cldf <- data.frame(label = get.vertex.attribute(w, "label"),
-                   community = cl_cluster_walktrap$membership)
-
-
 library(dplyr)
 library(ggplot2)
-cldf <- cldf %>% arrange(community)
-counts <- cldf %>% group_by(community) %>% summarise(count = n()) %>% arrange(desc(count))
+
+w <- read.graph("wikipedia.gml", format="gml")
+cl_cluster_walktrap <- cluster_walktrap(w)
+cldf <- data.frame(label = get.vertex.attribute(w, "label"),
+                   community = cl_cluster_walktrap$membership)
+counts <- cldf %>%
+  group_by(community) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count))
+
+head(counts)
+ggplot(data = counts, aes(x = count)) + geom_bar() + xlab("Number of pages in a community") + 
+  ggtitle("Distribution of community sizes")
+ggsave("Distribution of Wiki community sizes.png", 4, 4)
+
+cldf %>% filter(community == 5) %>% head(n = 10) %>% select(label) %>% mutate(label = as.character(label)) %>% as.vector()
+cldf %>% filter(community == 821) %>% head(n = 10) %>% select(label) %>% mutate(label = as.character(label)) %>% as.vector()
+
 head(counts)
 
-
-cldf %>% filter(community == 19) %>% head(n = 100)
+for(id in head(counts, 5)$community){
+  print(id)  
+}
 
 sample_community_ids <- cldf$community %>% unique %>% sample(size = 5)
 
@@ -116,7 +122,7 @@ for(id in sample_community_ids){
   if(nrow(this_community) > 5){
     this_community
     
-    
+
   } else {
     print(as.character(this_community$label))
   }
