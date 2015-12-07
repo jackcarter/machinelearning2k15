@@ -16,10 +16,13 @@ library(reshape2)
 dim(df)
 
 #How many examples do we have of each category?
-qplot(df$status_group)
+qplot(df$status_group, xlab="pump classification")
 
 ##30 factor columns, 10 numeric columns
-sapply(features, class) %>% as.data.frame() %>% table()
+#sapply(features, class) %>% as.data.frame() %>% table()
+
+##30 factor columns, 10 numeric columns
+sapply(df, class) %>% as.data.frame() %>% table()
 
 ##None of the data is missing!
 sapply(df, prop_na) %>% as.data.frame() %>% table()

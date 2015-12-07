@@ -137,6 +137,8 @@ df[df$gps_height == 0, "gps_height"] <- mean_gps_height
 # df <- df[, colnames(df) != "scheme_management"]
 # df <- df[, colnames(df) != "water_quality"]
 
+# remove id field
+df <- df[, colnames(df) != "id"]
 
 
 # 80% test, 20% train
@@ -145,9 +147,9 @@ n1 <- floor(4*n/5)
 n2 <- floor(n/5)
 ii <- sample(1:n,n)
 
-df_train <- df[ii[1:n1], -1] #remove id field
-df_smtrain <- df[ii[1:n2], -1] #remove id field
-df_test <- df[ii[(n1+1):n], -1] # remove id field
+df_train <- df[ii[1:n1],] 
+df_smtrain <- df[ii[1:n2],] 
+df_test <- df[ii[(n1+1):n],]
 
 # 
 # # prepare data for gbm, which needs the predicted variable to be {0,1}
