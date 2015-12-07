@@ -15,6 +15,12 @@ df <- cleanseAndProcessData(merge(labels, features, by = "id"))
 # data for submission to DrivenData competition
 df_submission <- cleanseAndProcessData(read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Test_set_values.csv"))
 
+# normalize factors in submission data set to match the training set
+for (i in 1:ncol(df_submission)) {
+  if (class(df_submission[,i]) == "factor") {
+    levels(df_submission[,i]) <- levels(df[,(i+1)]) # df has one more column (status_group) than df_submission
+  }
+}
 
 # 80% test, 20% train
 n <- nrow(df)

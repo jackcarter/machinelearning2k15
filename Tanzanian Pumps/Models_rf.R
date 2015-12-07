@@ -44,6 +44,13 @@ misclass_mod_rf2_newdata <- sum(pred_mod_rf2_newdata != df_test[, "status_group"
 cat("newdata misclassification rate for rf2: ", misclass_mod_rf2_newdata)
 
 
+
+########## predict for submission to DrivenData competition
+pred_submission <- predict(mod_rf2, newdata=df_submission[,-1])
+data_for_upload <- data.frame(id=df_submission$id, status_group=pred_submission)
+write.csv(data_for_upload, file="tangy_stangs_20151206_1021_take2.csv", row.names=FALSE)
+
+
 ########## evaluate mod_rf2
 
 groups <- c("functional", "functional needs repair", "non functional")
@@ -97,7 +104,7 @@ for (i in 1:length(groups)) {
   }
   
   g + geom_point(data = df_test[relevant_rows,], aes(x = longitude, y = latitude, color = group_preds[relevant_rows]), size = 1)
-  fn <- paste0("Accuracy of mod_rf2 for ", group, ".png")
+  fn <- paste0("Random forest accuracy for ", group, ".png")
   ggsave(filename=fn, width = 10, height = 10)
   
 }
@@ -165,24 +172,24 @@ for (i in 1:length(groups)) {
 # results
 #misclassification_rate = list()
 
-##settings for randomForest
-p <- ncol(df_smtrain) - 1
-mtryv = c(2,3,4,5,6,7,19)
-ntreev = c(300, 500, 800, 1000, 1200, 1500, 1800)
-setrf = expand.grid(mtryv,ntreev)
-colnames(setrf)=c("mtry","ntree")
-
-##fit rf: m=4, n_tree=1000 performed best
-
-for(i in 1:nrow(setrf)) {
-  cat("on randomForest fit ",i,"\n")
-  print(setrf[i,])
-  
-  #fit and predict
-  mod_rf_tmp = randomForest(status_group ~ ., data=df_smtrain, mtry=setrf[i,1], ntree=setrf[i,2])
-  pred_tmp <- predict(mod_rf_tmp)  # with newdata unspecified, uses OOB
-  misclass_tmp <- sum(pred_tmp != df_smtrain[, "status_group"]) / nrow(df_smtrain)
-  
-  cat(misclass_tmp)
-}
+# ##settings for randomForest
+# p <- ncol(df_smtrain) - 1
+# mtryv = c(2,3,4,5,6,7,19)
+# ntreev = c(300, 500, 800, 1000, 1200, 1500, 1800)
+# setrf = expand.grid(mtryv,ntreev)
+# colnames(setrf)=c("mtry","ntree")
+# 
+# ##fit rf: m=4, n_tree=1000 performed best
+# 
+# for(i in 1:nrow(setrf)) {
+#   cat("on randomForest fit ",i,"\n")
+#   print(setrf[i,])
+#   
+#   #fit and predict
+#   mod_rf_tmp = randomForest(status_group ~ ., data=df_smtrain, mtry=setrf[i,1], ntree=setrf[i,2])
+#   pred_tmp <- predict(mod_rf_tmp)  # with newdata unspecified, uses OOB
+#   misclass_tmp <- sum(pred_tmp != df_smtrain[, "status_group"]) / nrow(df_smtrain)
+#   
+#   cat(misclass_tmp)
+# }
 
