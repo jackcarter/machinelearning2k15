@@ -27,8 +27,8 @@ library(randomForest)
 
 
 # more trees, bigger data set
-m <- 4
-n_tree <- 800 
+m <- 2
+n_tree <- 1250 
 # ignore id field (first column)
 mod_rf2 <- randomForest(status_group ~ ., data=df_train[,-1], mtry=m, ntree=n_tree)
 varImpPlot(mod_rf2, main="Variable importance in random forest")
@@ -48,7 +48,7 @@ cat("newdata misclassification rate for rf2: ", misclass_mod_rf2_newdata)
 ########## predict for submission to DrivenData competition
 pred_submission <- predict(mod_rf2, newdata=df_submission[,-1])
 data_for_upload <- data.frame(id=df_submission$id, status_group=pred_submission)
-write.csv(data_for_upload, file="tangy_stangs_20151206_1021_take2.csv", row.names=FALSE)
+write.csv(data_for_upload, file="tangy_stangs_20151207_0135_2-1250.csv", row.names=FALSE)
 
 
 ########## evaluate mod_rf2
@@ -145,8 +145,9 @@ for (i in 1:length(groups)) {
 ### mtry=2, ntree=1000 performed best
 ###
 
+# 3/1500 does best
 # ##settings for randomForest
-# mtryv = c(2,3)
+# mtryv = c(3,4,5)
 # ntreev = c(500,1000,1500)
 # setrf = expand.grid(mtryv,ntreev)
 # colnames(setrf)=c("mtry","ntree")
@@ -164,6 +165,53 @@ for (i in 1:length(groups)) {
 #   
 #   cat(misclass_tmp, "\n\n")
 # }
+
+
+### best from this run:
+# mtry ntree
+# 1    2  1500
+# 0.2271886 
+# 
+# mtry ntree
+# 5    3  2000
+# 0.2271044 
+# 
+# mtry ntree
+# 7    2  2500
+# 0.2275253 
+#
+# mtry ntree
+# 1    2  1250
+# 0.2260101 
+#
+# mtry ntree
+# 1    2  1150
+# 0.227862 
+# 
+# mtry ntree
+# 2    2  1350
+# 0.2276094 
+
+
+
+mtryv = c(2)
+ntreev = c(1150,1350)
+setrf = expand.grid(mtryv,ntreev)
+colnames(setrf)=c("mtry","ntree")
+
+for(i in 1:nrow(setrf)) {
+  cat("on randomForest fit ",i,"\n")
+  print(setrf[i,])
+  
+  #fit and predict
+  mod_rf_tmp = randomForest(status_group ~ ., data=df_smtrain, mtry=setrf[i,1], ntree=setrf[i,2])
+  pred_tmp <- predict(mod_rf_tmp)  # with newdata unspecified, uses OOB
+  misclass_tmp <- sum(pred_tmp != df_smtrain[, "status_group"]) / nrow(df_smtrain)
+  
+  cat(misclass_tmp, "\n\n")
+}
+
+
 
 ####
 #### testing to figure out optimum mtry and ntree

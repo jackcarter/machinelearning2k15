@@ -157,12 +157,12 @@ cleanseAndProcessData <- function(df){
   df[df$gps_height == 0, "gps_height"] <- mean_gps_height
   
   
-  # # low value, but not "no value"?
-  # df <- df[, colnames(df) != "amount_tsh"]
-  # df <- df[, colnames(df) != "basin"]
-  # df <- df[, colnames(df) != "management"]
+  # low value
+  #df <- df[, colnames(df) != "amount_tsh"]
+  df <- df[, colnames(df) != "basin"]
+  df <- df[, colnames(df) != "management"]
   # df <- df[, colnames(df) != "scheme_management"]
-  # df <- df[, colnames(df) != "water_quality"]
+  df <- df[, colnames(df) != "water_quality"]
   
   # remove id field
   #df <- df[, colnames(df) != "id"]
