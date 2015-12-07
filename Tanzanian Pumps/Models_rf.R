@@ -29,10 +29,11 @@ library(randomForest)
 # more trees, bigger data set
 m <- 4
 n_tree <- 800 
-mod_rf2 <- randomForest(status_group ~ ., data=df_train, mtry=m, ntree=n_tree)
+# ignore id field (first column)
+mod_rf2 <- randomForest(status_group ~ ., data=df_train[,-1], mtry=m, ntree=n_tree)
 varImpPlot(mod_rf2, main="Variable importance in random forest")
 
-# out-of-bag: 23.1% misclassification rate
+# out-of-bag
 pred_mod_rf2_oob <- predict(mod_rf2)  # with newdata unspecified, uses OOB
 misclass_mod_rf2_oob <- sum(pred_mod_rf2_oob != df_train[, "status_group"]) / nrow(df_train)
 cat("OOB misclassification rate for rf2: ", misclass_mod_rf2_oob)
