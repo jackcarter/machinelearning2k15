@@ -42,7 +42,7 @@ g + geom_point(data = df, aes(x = longitude, y = latitude, color = basin), size 
 ggsave("Well Status by Basin", width = 10, height = 10)
 
 
-i = 12
+i = 17
 for (i in 3:6) {
   
   x = df[[i]]
@@ -68,3 +68,4 @@ for (i in 3:6) {
   
   
 }
+

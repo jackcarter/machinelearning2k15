@@ -51,6 +51,35 @@ latest_construction_year <- df[which.max(df$construction_year), "construction_ye
 # days since construction
 df$construction_age <- latest_construction_year - df$construction_year
 
+
+### lame code follows to reduce the dimensionality of 'lga' to the top 29 
+### regions, plus "other" for less common regions
+
+# # explore values of 'lga' -- this may be valuable if dimensionality is reduced
+# lga_summary <- df %>% 
+#   group_by(lga) %>%
+#   summarise(lga_observations = length(lga)) %>%
+#   arrange(desc(lga_observations))
+# 
+# #View(lga_summary)
+# 
+# min_lga_cnt <- lga_summary$lga_observations[29] # take top 29, and 30 and below will be "other"
+# df <- merge(df, lga_summary, by = "lga")
+# 
+# for (i in 1:nrow(df)) {
+#   if (df[i,"lga_observations"] >= min_lga_cnt) {
+#     df[i, "lga_grp"] <- as.character(df[i, "lga"])
+#   } else {
+#     df[i, "lga_grp"] <- as.factor("OTHER")
+#   }
+# }
+# 
+# # factorize
+# df$lga_grp <- as.factor(df$lga_grp)
+# # remove
+# df <- df[, colnames(df) != "lga_observations"]
+
+
 # remove
 df <- df[, colnames(df) != "construction_date"]
 
@@ -101,6 +130,15 @@ mean_gps_height <- mean(df$gps_height, na.rm=TRUE)
 df[df$gps_height == 0, "gps_height"] <- mean_gps_height
 
 
+# # low value, but not "no value"?
+# df <- df[, colnames(df) != "amount_tsh"]
+# df <- df[, colnames(df) != "basin"]
+# df <- df[, colnames(df) != "management"]
+# df <- df[, colnames(df) != "scheme_management"]
+# df <- df[, colnames(df) != "water_quality"]
+
+
+
 # 80% test, 20% train
 n <- nrow(df)
 n1 <- floor(4*n/5)
@@ -111,47 +149,47 @@ df_train <- df[ii[1:n1], -1] #remove id field
 df_smtrain <- df[ii[1:n2], -1] #remove id field
 df_test <- df[ii[(n1+1):n], -1] # remove id field
 
-
-# prepare data for gbm, which needs the predicted variable to be {0,1}
-
-is_f <- c()
-is_fnr <- c()
-is_nf <- c()
-
-for (i in 1:nrow(df)) {
-  sg <- df[i, "status_group"]
-  if (sg == "functional") {
-    is_f[i] = 1
-  } else {
-    is_f[i] = 0  
-  }
-  
-  if (sg == "functional needs repair") {
-    is_fnr[i] = 1
-  } else {
-    is_fnr[i] = 0  
-  }
-
-  if (sg == "non functional") {
-    is_nf[i] = 1
-  } else {
-    is_nf[i] = 0  
-  }
-
-}
-
-df_gbm1 <- cbind(is_f, df[,-c(1,2)]) # remove id and status_group
-df_train_gbm1 <- df_gbm1[ii[1:n1],]
-df_smtrain_gbm1 <- df_gbm1[ii[1:n2],]
-df_test_gbm1 <- df_gbm1[ii[(n1+1):n],]
-
-df_gbm2 <- cbind(is_fnr, df[,-c(1,2)]) # remove id and status_group
-df_train_gbm2 <- df_gbm2[ii[1:n1],]
-df_smtrain_gbm2 <- df_gbm2[ii[1:n2],]
-df_test_gbm2 <- df_gbm2[ii[(n1+1):n],]
-
-df_gbm3 <- cbind(is_nf, df[,-c(1,2)]) # remove id and status_group
-df_train_gbm3 <- df_gbm3[ii[1:n1],]
-df_smtrain_gbm3 <- df_gbm3[ii[1:n2],]
-df_test_gbm3 <- df_gbm3[ii[(n1+1):n],]
-
+# 
+# # prepare data for gbm, which needs the predicted variable to be {0,1}
+# 
+# is_f <- c()
+# is_fnr <- c()
+# is_nf <- c()
+# 
+# for (i in 1:nrow(df)) {
+#   sg <- df[i, "status_group"]
+#   if (sg == "functional") {
+#     is_f[i] = 1
+#   } else {
+#     is_f[i] = 0  
+#   }
+#   
+#   if (sg == "functional needs repair") {
+#     is_fnr[i] = 1
+#   } else {
+#     is_fnr[i] = 0  
+#   }
+# 
+#   if (sg == "non functional") {
+#     is_nf[i] = 1
+#   } else {
+#     is_nf[i] = 0  
+#   }
+# 
+# }
+# 
+# df_gbm1 <- cbind(is_f, df[,-c(1,2)]) # remove id and status_group
+# df_train_gbm1 <- df_gbm1[ii[1:n1],]
+# df_smtrain_gbm1 <- df_gbm1[ii[1:n2],]
+# df_test_gbm1 <- df_gbm1[ii[(n1+1):n],]
+# 
+# df_gbm2 <- cbind(is_fnr, df[,-c(1,2)]) # remove id and status_group
+# df_train_gbm2 <- df_gbm2[ii[1:n1],]
+# df_smtrain_gbm2 <- df_gbm2[ii[1:n2],]
+# df_test_gbm2 <- df_gbm2[ii[(n1+1):n],]
+# 
+# df_gbm3 <- cbind(is_nf, df[,-c(1,2)]) # remove id and status_group
+# df_train_gbm3 <- df_gbm3[ii[1:n1],]
+# df_smtrain_gbm3 <- df_gbm3[ii[1:n2],]
+# df_test_gbm3 <- df_gbm3[ii[(n1+1):n],]
+# 
