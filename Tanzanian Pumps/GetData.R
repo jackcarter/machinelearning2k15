@@ -140,6 +140,41 @@ df[df$gps_height == 0, "gps_height"] <- mean_gps_height
 # remove id field
 df <- df[, colnames(df) != "id"]
 
+# impute population by subsituting the population of the nearest well
+for (i in 1:nrow(df)) {
+  if (df[i,"population"] > 0) {
+    # do nothing
+    # good data
+    cat("skipping\n")
+  } else {
+    nearest <- 999999
+    imputed_population <- 0
+    lat <- df[i, "latitude"]
+    long <- df[i, "longitude"]
+    
+    for (j in nrow(df)) {
+      if (df[j, "population"] == 0) {
+        # skip
+      } else {
+        # calculate distance as the crow flies
+        this_lat <- df[j, "latitude"]
+        this_long <- df[j, "longitude"]
+        this_dist <- sqrt((this_lat - lat)^2 + (this_long - long)^2)
+        #cat(this_dist)
+        if (this_dist < nearest) {
+          nearest <- this_dist
+          imputed_population <- df[j, "population"]
+          cat("temp nearest for", i, this_dist, imputed_population, "\n")
+        }
+      }
+    }
+    
+    cat("final nearest for", i, "imputed_population", imputed_population, "\n\n")
+  }
+}
+
+
+
 
 # 80% test, 20% train
 n <- nrow(df)
