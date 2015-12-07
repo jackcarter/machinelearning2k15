@@ -30,7 +30,7 @@ library(randomForest)
 m <- 4
 n_tree <- 800 
 mod_rf2 <- randomForest(status_group ~ ., data=df_train, mtry=m, ntree=n_tree)
-varImpPlot(mod_rf2)
+varImpPlot(mod_rf2, main="Variable importance in random forest")
 
 # out-of-bag: 23.1% misclassification rate
 pred_mod_rf2_oob <- predict(mod_rf2)  # with newdata unspecified, uses OOB
