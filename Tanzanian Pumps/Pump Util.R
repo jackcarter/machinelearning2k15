@@ -117,6 +117,55 @@ cleanseAndProcessData <- function(df){
   #recorded_by is clearly useless - remove it
   df <- df[, colnames(df) != "recorded_by"]
   
+  # recode for common "funder"
+  c <- count(features, "funder")
+  c <- c[order(-c$freq),]
+  topfunders <- c[1:52,"funder"]
+  
+  
+  ### annoying crap to re-code "funder" as the top funders, plus a 
+  ### catch-all "otherfunder" category
+  
+  # add level
+  df$funder <- factor(df$funder, levels=c(levels(df$funder), "otherfunder"))
+  
+  for (i in 1:nrow(df)) {
+    funder <- df[i, "funder"]
+    if (funder == "" | funder == "0" | is.na(funder) | !(funder %in% topfunders)) {
+      df[i, "gfunder"] <- "otherfunder"
+    } else {
+      df[i, "gfunder"] <- funder
+    }
+  }
+  
+  # fix levels
+  df$gfunder <- factor(df$gfunder)
+
+  
+#   # recode for common "installer"
+#   c <- count(features, "installer")
+#   c <- c[order(-c$freq),]
+#   top50installers <- c[1:50,"installer"]
+#   
+#   ### annoying crap to re-code "installer" as the top installers, plus a 
+#   ### catch-all "otherinstaller" category
+#   
+#   # add level
+#   df$installer <- factor(df$installer, levels=c(levels(df$installer), "otherinstaller"))
+#   
+#   for (i in 1:nrow(df)) {
+#     installer <- df[i, "installer"]
+#     if (installer == "" | installer == "0" | is.na(installer) | !(installer %in% top50installers)) {
+#       df[i, "ginstaller"] <- "otherinstaller"
+#     } else {
+#       df[i, "ginstaller"] <- installer
+#     }
+#   }
+#   
+#   # fix levels
+#   df$ginstaller <- factor(df$ginstaller)
+  
+  
   # remove columns with too many categorical values
   df <- df[, colnames(df) != "funder"]
   df <- df[, colnames(df) != "installer"]
@@ -158,10 +207,10 @@ cleanseAndProcessData <- function(df){
   
   
   # low value
-  #df <- df[, colnames(df) != "amount_tsh"]
+  df <- df[, colnames(df) != "amount_tsh"]
   df <- df[, colnames(df) != "basin"]
   df <- df[, colnames(df) != "management"]
-  # df <- df[, colnames(df) != "scheme_management"]
+  df <- df[, colnames(df) != "scheme_management"]
   df <- df[, colnames(df) != "water_quality"]
   
   # remove id field

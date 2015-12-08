@@ -27,8 +27,8 @@ library(randomForest)
 
 
 # more trees, bigger data set
-m <- 2
-n_tree <- 1250 
+m <- 4
+n_tree <- 800
 # ignore id field (first column)
 mod_rf2 <- randomForest(status_group ~ ., data=df_train[,-1], mtry=m, ntree=n_tree)
 varImpPlot(mod_rf2, main="Variable importance in random forest")
@@ -48,7 +48,7 @@ cat("newdata misclassification rate for rf2: ", misclass_mod_rf2_newdata)
 ########## predict for submission to DrivenData competition
 pred_submission <- predict(mod_rf2, newdata=df_submission[,-1])
 data_for_upload <- data.frame(id=df_submission$id, status_group=pred_submission)
-write.csv(data_for_upload, file="tangy_stangs_20151207_0135_2-1250.csv", row.names=FALSE)
+write.csv(data_for_upload, file="tangy_stangs_20151207_2356_4-800.csv", row.names=FALSE)
 
 
 ########## evaluate mod_rf2
