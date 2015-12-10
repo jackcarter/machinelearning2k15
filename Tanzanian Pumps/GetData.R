@@ -10,7 +10,8 @@ source("Pump Util.R")
 
 features <- read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Training_set_values.csv")
 labels <- read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Training_set_labels.csv")
-df <- cleanseAndProcessData(merge(labels, features, by = "id"))
+df <- merge(labels, features, by = "id")
+df <- cleanseAndProcessData(df)
 
 # data for submission to DrivenData competition
 df_submission <- cleanseAndProcessData(read.csv("Pump_it_Up_Data_Mining_the_Water_Table_-_Test_set_values.csv"))
