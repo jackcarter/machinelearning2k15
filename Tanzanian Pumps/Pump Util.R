@@ -216,36 +216,14 @@ cleanseAndProcessData <- function(df){
   # remove id field
   #df <- df[, colnames(df) != "id"]
   
-  # impute population by subsituting the population of the nearest well
-  for (i in 1:nrow(df)) {
-    if (df[i,"population"] > 0) {
-      # do nothing
-      # good data
-    } else {
-      nearest <- 999999
-      imputed_population <- 0
-      lat <- df[i, "latitude"]
-      long <- df[i, "longitude"]
-      
-      for (j in nrow(df)) {
-        if (df[j, "population"] == 0) {
-          # skip
-        } else {
-          # calculate distance as the crow flies
-          this_lat <- df[j, "latitude"]
-          this_long <- df[j, "longitude"]
-          this_dist <- sqrt((this_lat - lat)^2 + (this_long - long)^2)
-          #cat(this_dist)
-          if (this_dist < nearest) {
-            nearest <- this_dist
-            imputed_population <- df[j, "population"]
-          }
-        }
-      }
-      
-      df[i, "population"] <- imputed_population
-    }
-  }
+  #Impute population from nearest neighbors
+  library(DMwR)
+  impute.pop <- df[, colnames(df) %in% c("latitude","longitude","population")]
+  #Populations of 0 or 1 are probably missing data
+  impute.pop$population[impute.pop$population == 0] <- NA
+  impute.pop$population[impute.pop$population == 1] <- NA
+  impute.pop <- knnImputation(impute.pop)
+  df$population=impute.pop$population
   
   return(df)
 }
